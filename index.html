@@ -3,63 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>codetbase - 강화 게임</title>
+    <title>codetbase - 전설의 강화</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #e6e9ed; font-family: 'Pretendard', sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .game-container { width: 100%; max-width: 400px; background: white; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; display: none; }
         
-        /* 알림창 */
-        #ban-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; text-align: center; }
+        /* 알림 효과 */
+        #ban-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; text-align: center; }
         #full-effect { position: fixed; top:0; left:0; width:100%; height:100%; z-index: 9999; display: none; align-items: center; justify-content: center; font-size: 40px; font-weight: 900; color: white; pointer-events: none; }
 
-        .header { background: #2c3e50; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .gold-display { color: #f1c40f; font-weight: bold; font-size: 18px; position: relative; }
-        .money-anim { position: absolute; right: 0; top: -20px; animation: upFade 2s forwards; font-weight: bold; }
-        @keyframes upFade { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-50px); } }
+        .header { background: #2c3e50; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .gold-wrap { display: flex; align-items: center; gap: 8px; }
+        .code-btn { background: #f1c40f; border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
-        .img-area { background: #f0f0f0; height: 220px; margin: 15px; border-radius: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .sword-img { max-width: 80%; max-height: 80%; object-fit: contain; }
+        .top-bar { width: 100%; max-width: 400px; display: flex; justify-content: flex-end; margin-bottom: 10px; }
+        .check-btn { background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+
+        .img-area { background: #f0f0f0; height: 210px; margin: 15px; border-radius: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .sword-img { max-width: 75%; max-height: 75%; object-fit: contain; }
         .hammering { animation: hammer 0.1s infinite; }
-        @keyframes hammer { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes hammer { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
-        .btn-group { padding: 15px; display: flex; gap: 10px; }
-        button { flex: 1; padding: 16px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-group { padding: 15px; display: flex; gap: 8px; }
+        .btn-main { flex: 2; padding: 16px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #2c3e50; color: white; }
+        .btn-sub { flex: 1; padding: 16px; border-radius: 12px; border: none; font-weight: bold; background: #f1f2f6; cursor: pointer; }
         
         .rank-box { width: 100%; max-width: 400px; background: white; margin-top: 15px; border-radius: 20px; padding: 15px; box-sizing: border-box; }
-        .rank-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+        .rank-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 13px; }
     </style>
 </head>
 <body>
-<div id="loading">데이터 로딩 중...</div>
+<div id="loading">로딩 중...</div>
 
 <div id="ban-overlay"><h1>🚫</h1><h2>임시 정지되었습니다.</h2><p>관리자에게 문의해주세요.</p></div>
 <div id="full-effect"></div>
 
+<div class="top-bar">
+    <button class="check-btn" onclick="dailyCheck()">📅 출석체크</button>
+</div>
+
 <div class="game-container" id="game-ui">
     <div class="header">
-        <span id="u-nick">...</span>
-        <div class="gold-display" id="gold-container"><span id="u-gold">0</span>G</div>
+        <span id="u-nick" style="font-size: 14px;">...님</span>
+        <div class="gold-wrap">
+            <span id="u-gold" style="color: #f1c40f; font-weight: bold;">0G</span>
+            <button class="code-btn" onclick="redeem()">코드</button>
+        </div>
     </div>
 
-    <div style="padding:15px; font-size:14px;"><b>루돌프:</b> <span id="npc-text" style="color:#666;">어서오게! 무엇을 강화하겠나?</span></div>
+    <div style="padding: 12px 15px; font-size: 13px;"><b>루돌프:</b> <span id="npc-text">반갑네! 강화하러 왔나?</span></div>
     
     <div class="img-area"><img id="s-img" src="" class="sword-img"></div>
     
-    <div style="padding:0 20px 15px;">
-        <div id="s-name" style="font-size:20px; font-weight:bold;">이름</div>
-        <div id="s-desc" style="font-size:13px; color:#7f8c8d; margin-top:5px;">설명</div>
-        <div id="s-info" style="font-size:14px; color:#2c3e50; margin-top:10px; font-weight:bold;">비용: 0G | 확률: 0%</div>
+    <div style="padding: 0 20px 10px;">
+        <div id="s-name" style="font-size: 19px; font-weight: bold;">...</div>
+        <div id="s-desc" style="font-size: 12px; color: #7f8c8d; margin-top: 4px;">...</div>
+        <div id="s-info" style="font-size: 13px; color: #2c3e50; margin-top: 8px; font-weight: bold;">비용: 0G | 확률: 0%</div>
     </div>
 
     <div class="btn-group">
-        <button onclick="redeem()" style="background:#f1f2f6;">코드 입력</button>
-        <button onclick="handleUpgrade()" style="background:#2c3e50; color:white;">강화하기</button>
+        <button class="btn-sub" onclick="handleSell()">판매</button>
+        <button class="btn-main" onclick="handleUpgrade()">강화하기</button>
     </div>
 </div>
 
 <div class="rank-box">
-    <h4 style="margin:0 0 10px 0;">🏆 전설의 순위</h4>
+    <h4 style="margin:0 0 8px 0;">🏆 전설의 순위</h4>
     <div id="rank-list"></div>
 </div>
 
@@ -88,19 +98,48 @@
     function updateUI() {
         const item = swords[user.current_sword_lvl] || swords[1];
         document.getElementById('u-nick').innerText = user.nickname + "님";
-        document.getElementById('u-gold').innerText = user.gold.toLocaleString();
+        document.getElementById('u-gold').innerText = user.gold.toLocaleString() + "G";
         document.getElementById('s-name').innerText = `[+${item.level-1}] ${item.name}`;
-        document.getElementById('s-desc').innerText = item.description || "설명이 없습니다.";
+        document.getElementById('s-desc').innerText = item.description || "설명 없음";
         document.getElementById('s-info').innerText = `비용: ${item.upgrade_cost.toLocaleString()}G | 확률: ${item.success_rate*100}%`;
         document.getElementById('s-img').src = item.image_url;
     }
 
-    function animGold(amt, plus=false) {
-        const div = document.createElement('div'); div.className = 'money-anim';
-        div.style.color = plus ? '#3498db' : '#e74c3c';
-        div.innerText = (plus ? '+' : '-') + amt.toLocaleString() + 'G';
-        document.getElementById('gold-container').appendChild(div);
-        setTimeout(() => div.remove(), 2000);
+    async function dailyCheck() {
+        const lastCheck = localStorage.getItem(`check_${user.id}`);
+        const today = new Date().toDateString();
+        
+        if(lastCheck === today) return alert("이미 오늘 출석체크를 했습니다!");
+
+        const reward = Number(localStorage.getItem('codet_daily')) || 5000;
+        user.gold += reward;
+        await supabaseClient.from('profiles').update({ gold: user.gold }).eq('id', user.id);
+        localStorage.setItem(`check_${user.id}`, today);
+        
+        alert(`출석이 되었습니다! +${reward.toLocaleString()}G`);
+        updateUI(); loadRank();
+    }
+
+    async function handleUpgrade() {
+        const s = swords[user.current_sword_lvl];
+        if(user.gold < s.upgrade_cost) return alert("골드가 부족합니다!");
+
+        const img = document.getElementById('s-img');
+        img.classList.add('hammering');
+
+        const success = Math.random() < s.success_rate;
+        const nextLvl = success ? user.current_sword_lvl + 1 : user.current_sword_lvl;
+        if(success && !swords[nextLvl]) { img.classList.remove('hammering'); return alert("최고 레벨!"); }
+
+        user.gold -= s.upgrade_cost;
+        await supabaseClient.from('profiles').update({ gold: user.gold, current_sword_lvl: nextLvl }).eq('id', user.id);
+
+        setTimeout(() => {
+            img.classList.remove('hammering');
+            user.current_sword_lvl = nextLvl;
+            showEffect(success);
+            updateUI(); loadRank();
+        }, 800);
     }
 
     function showEffect(success) {
@@ -111,41 +150,27 @@
         setTimeout(() => el.style.display = 'none', 2000);
     }
 
-    async function handleUpgrade() {
-        const s = swords[user.current_sword_lvl];
-        if(user.gold < s.upgrade_cost) return alert("골드가 부족합니다!");
+    async function handleSell() {
+        const item = swords[user.current_sword_lvl];
+        if(user.current_sword_lvl === 1) return alert("기본 검은 팔 수 없습니다!");
+        if(!confirm(`정말 ${item.name}을(를) 판매하시겠습니까? (LV 1로 돌아갑니다)`)) return;
 
-        const img = document.getElementById('s-img');
-        img.classList.add('hammering');
-        animGold(s.upgrade_cost);
-
-        const success = Math.random() < s.success_rate;
-        const nextLvl = success ? user.current_sword_lvl + 1 : user.current_sword_lvl;
-        if(success && !swords[nextLvl]) { img.classList.remove('hammering'); return alert("최고 레벨 도달!"); }
-
-        const nextGold = user.gold - s.upgrade_cost;
-        await supabaseClient.from('profiles').update({ gold: nextGold, current_sword_lvl: nextLvl }).eq('id', user.id);
-
-        setTimeout(() => {
-            img.classList.remove('hammering');
-            user.gold = nextGold; user.current_sword_lvl = nextLvl;
-            showEffect(success);
-            document.getElementById('npc-text').innerText = success ? "오! 대단한 무기가 탄생했군!" : "이런... 실패했구만. 다시 해보게.";
-            updateUI(); loadRank();
-        }, 800);
+        const sellPrice = Math.floor(item.upgrade_cost * 1.5); // 판매가는 강화비용의 1.5배 (예시)
+        user.gold += sellPrice;
+        user.current_sword_lvl = 1;
+        await supabaseClient.from('profiles').update({ gold: user.gold, current_sword_lvl: 1 }).eq('id', user.id);
+        alert(`판매 완료! +${sellPrice.toLocaleString()}G`);
+        updateUI(); loadRank();
     }
 
     async function redeem() {
-        const code = prompt("코드를 입력하세요.");
-        if(!code) return;
+        const code = prompt("보상 코드를 입력하세요.");
         const { data } = await supabaseClient.from('reward_codes').select('*').eq('code', code).single();
-        if(!data) return alert("잘못된 코드입니다.");
-        
+        if(!data) return alert("코드가 틀렸습니다.");
         user.gold += data.reward_gold;
         await supabaseClient.from('profiles').update({ gold: user.gold }).eq('id', user.id);
-        animGold(data.reward_gold, true);
+        alert(`코드 보상 지급! +${data.reward_gold.toLocaleString()}G`);
         updateUI(); loadRank();
-        alert("보상이 지급되었습니다!");
     }
 
     async function loadRank() {
