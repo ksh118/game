@@ -10,7 +10,7 @@
         .game-container { width: 100%; max-width: 400px; background: white; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; display: none; }
         
         #ban-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; text-align: center; }
-        #full-effect { position: fixed; top:0; left:0; width:100%; height:100%; z-index: 9999; display: none; align-items: center; justify-content: center; font-size: 40px; font-weight: 900; color: white; pointer-events: none; }
+        #full-effect { position: fixed; top:0; left:0; width:100%; height:100%; z-index: 9999; display: none; align-items: center; justify-content: center; font-size: 40px; font-weight: 900; color: white; pointer-events: none; text-align: center; }
 
         .header { background: #2c3e50; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
         .gold-wrap { display: flex; align-items: center; gap: 8px; position: relative; }
@@ -133,11 +133,24 @@
         const img = document.getElementById('s-img');
         img.classList.add('hammering');
         showGoldEffect(s.upgrade_cost, false);
+        
         const success = Math.random() < s.success_rate;
-        const nextLvl = success ? user.current_sword_lvl + 1 : user.current_sword_lvl;
-        if(success && !swords[nextLvl]) { img.classList.remove('hammering'); return alert("최고 레벨!"); }
+        let nextLvl;
+        
+        if (success) {
+            nextLvl = user.current_sword_lvl + 1;
+            if (!swords[nextLvl]) { 
+                img.classList.remove('hammering'); 
+                return alert("최고 레벨!"); 
+            }
+        } else {
+            // 실패 시 1레벨 하락 (최소 1레벨 유지)
+            nextLvl = Math.max(1, user.current_sword_lvl - 1);
+        }
+
         user.gold -= s.upgrade_cost;
         await supabaseClient.from('profiles').update({ gold: user.gold, current_sword_lvl: nextLvl }).eq('id', user.id);
+        
         setTimeout(() => {
             img.classList.remove('hammering');
             user.current_sword_lvl = nextLvl;
@@ -150,7 +163,10 @@
         const el = document.getElementById('full-effect');
         el.style.display = 'flex';
         el.style.backgroundColor = success ? 'rgba(52, 152, 219, 0.8)' : 'rgba(231, 76, 60, 0.8)';
-        el.innerText = success ? "강화 성공!!" : "강화 실패...";
+        
+        // 실패 시 문구 변경: 강화 실패! -1LV
+        el.innerText = success ? "강화 성공!!" : "강화 실패!\n-1LV";
+        
         setTimeout(() => { el.style.display = 'none'; }, 800); 
     }
 
