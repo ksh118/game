@@ -3,44 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>codetbase - 강화</title>
+    <title>codetbase - 크리스마스 강화</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --main-dark: #2c3e50; }
-        body { background: #e6e9ed; font-family: sans-serif; display: flex; justify-content: center; margin: 0; padding: 20px 0; }
-        .game-container { width: 100%; max-width: 420px; background: white; border-radius: 30px; overflow: hidden; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .header { background: var(--main-dark); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .npc-box { background: #f8f9fa; border: 1px solid #ddd; border-radius: 15px; margin: 15px; padding: 15px; }
-        .img-box { background: #eee; height: 250px; display: flex; align-items: center; justify-content: center; margin: 0 15px; border-radius: 20px; }
-        .sword-img { max-width: 85%; max-height: 85%; object-fit: contain; }
+        :root { --main: #2c3e50; }
+        body { background: #e6e9ed; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; margin: 0; padding: 20px 0; }
+        .game-container { width: 100%; max-width: 420px; background: white; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; display: none; }
+        .header { background: var(--main); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .npc-msg-box { background: #f8f9fa; border: 1px solid #ddd; border-radius: 15px; margin: 15px; padding: 15px; min-height: 60px; }
+        .image-area { background: #eee; height: 260px; display: flex; align-items: center; justify-content: center; margin: 0 15px; border-radius: 20px; position: relative; }
+        .sword-img { max-width: 80%; max-height: 80%; object-fit: contain; }
+        .shake { animation: shake 0.1s infinite; }
+        @keyframes shake { 0% {transform: rotate(-2deg);} 50% {transform: rotate(2deg);} 100% {transform: rotate(-2deg);} }
+        .money-eff { position: absolute; right: 20px; top: 10px; font-weight: bold; font-size: 24px; animation: floatUp 2.5s forwards; pointer-events: none; z-index: 100; }
+        @keyframes floatUp { 0% { opacity:0; transform:translateY(0); } 10% { opacity:1; } 100% { opacity:0; transform:translateY(-120px); } }
         .btn-group { display: flex; gap: 10px; padding: 15px; }
-        button { flex: 1; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
-        .money-eff { position: absolute; right: 20px; top: 10px; font-weight: bold; animation: float 2.5s forwards; }
-        @keyframes float { 0% { opacity:0; transform:translateY(0); } 20% { opacity:1; } 100% { opacity:0; transform:translateY(-100px); } }
+        button { flex: 1; padding: 16px; border-radius: 15px; border: none; font-weight: bold; font-size: 18px; cursor: pointer; transition: 0.2s; }
+        .upgrade-btn { background: var(--main); color: white; }
+        .upgrade-btn:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
-<div id="loading">데이터 로딩 중...</div>
+<div id="loading" style="margin-top: 100px;">데이터를 불러오는 중...</div>
 <div class="game-container" id="game-ui">
     <div class="header">
-        <span id="nick-display" style="color:#f1c40f; font-weight:bold;">로딩중...님</span>
+        <span id="nick-display" style="color:#f1c40f; font-weight:bold;">로딩중...</span>
         <div style="display:flex; gap:10px; align-items:center;">
-            <button onclick="redeem()" style="background:#f1c40f; color:#333; padding:5px 10px; font-size:12px; height:auto;">보상코드</button>
-            <div id="gold-anchor" style="position:relative;"><span id="gold-display" style="font-weight:bold;">0G</span></div>
+            <button onclick="redeem()" style="background:#f1c40f; color:#333; padding:5px 10px; font-size:12px; height:auto; border-radius:8px;">보상코드</button>
+            <div id="gold-anchor" style="position:relative;"><span id="gold-display" style="font-size:18px; font-weight:bold;">0G</span></div>
         </div>
     </div>
-    <div class="npc-box">
+    <div class="npc-msg-box">
         <b style="color:#c0392b; display:block; margin-bottom:5px;">대장장이 루돌프</b>
-        <div id="npc-msg">"반갑네! 무엇을 강화하러 왔나?"</div>
+        <div id="npc-msg">"어서오게! 무엇을 도와줄까?"</div>
     </div>
-    <div class="img-box"><img id="sword-img" src="" class="sword-img"></div>
+    <div class="image-area">
+        <img id="sword-img" src="" class="sword-img">
+    </div>
     <div style="padding:15px;">
-        <div id="sw-name" style="font-size:18px; font-weight:bold;">아이템 이름</div>
-        <div id="cost-info" style="font-size:13px; color:#888; margin-top:5px;">비용: 0G | 확률: 0%</div>
+        <div id="sw-name" style="font-size:20px; font-weight:bold;">아이템</div>
+        <div id="sw-info" style="font-size:14px; color:#666; margin-top:5px;">비용: 0G | 확률: 0%</div>
     </div>
     <div class="btn-group">
         <button onclick="handleSell()" style="background:#f1f2f6; color:#999;">판매</button>
-        <button onclick="handleUpgrade()" style="background:var(--main-dark); color:white;">강화하기</button>
+        <button class="upgrade-btn" onclick="handleUpgrade()">강화하기</button>
     </div>
 </div>
 
@@ -54,17 +60,13 @@
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) { location.href="login.html"; return; }
         
-        // 1. 아이템 데이터 로드
         const { data: s } = await supabaseClient.from('sword_data').select('*');
-        if(!s || s.length === 0) { alert("어드민에서 강화 데이터를 먼저 만드세요!"); return; }
-        s.forEach(item => swords[item.level] = item);
+        if(!s || s.length === 0) { document.getElementById('loading').innerText = "어드민에서 강화 데이터를 먼저 만드세요!"; return; }
+        s.forEach(i => swords[i.level] = i);
 
-        // 2. 유저 정보 로드 (없으면 기본값 생성)
-        let { data: p, error } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
-        if (error || !p) {
-            const { data: newUser } = await supabaseClient.from('profiles').insert([
-                { id: session.user.id, nickname: '모험가', gold: 1000, current_sword_lvl: 1 }
-            ]).select().single();
+        let { data: p } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+        if (!p) {
+            const { data: newUser } = await supabaseClient.from('profiles').insert([{ id: session.user.id, nickname: '신규유저', gold: 1000, current_sword_lvl: 1 }]).select().single();
             p = newUser;
         }
         user = p;
@@ -78,11 +80,11 @@
         document.getElementById('nick-display').innerText = user.nickname + "님";
         document.getElementById('gold-display').innerText = user.gold.toLocaleString() + "G";
         document.getElementById('sw-name').innerText = `[+${s.level-1}] ${s.name}`;
-        document.getElementById('cost-info').innerText = `비용: ${s.upgrade_cost.toLocaleString()}G | 확률: ${Math.floor(s.success_rate*100)}%`;
-        document.getElementById('sword-img').src = s.image_url || "https://via.placeholder.com/150";
+        document.getElementById('sw-info').innerText = `비용: ${s.upgrade_cost.toLocaleString()}G | 확률: ${Math.floor(s.success_rate*100)}%`;
+        document.getElementById('sword-img').src = s.image_url || "https://via.placeholder.com/200";
     }
 
-    function anim(amt, type) {
+    function showMoney(amt, type) {
         const e = document.createElement('div'); e.className = 'money-eff';
         e.style.color = type==='plus'?'#3498db':'#e74c3c';
         e.innerText = (type==='plus'?'+':'-') + amt.toLocaleString() + 'G';
@@ -92,28 +94,49 @@
 
     async function handleUpgrade() {
         const s = swords[user.current_sword_lvl];
-        if(user.gold < s.upgrade_cost) { alert("골드가 부족합니다."); return; }
-        anim(s.upgrade_cost, 'minus');
+        if(!s) return alert("강화 데이터를 찾을 수 없습니다.");
+        if(user.gold < s.upgrade_cost) return alert("골드가 부족합니다!");
+
+        const img = document.getElementById('sword-img');
+        img.classList.add('shake');
+        showMoney(s.upgrade_cost, 'minus');
+
         const success = Math.random() < s.success_rate;
         const nextLvl = success ? user.current_sword_lvl + 1 : user.current_sword_lvl;
-        if (success && !swords[nextLvl]) { alert("마지막 단계입니다!"); return; }
         
-        user.gold -= s.upgrade_cost;
-        user.current_sword_lvl = nextLvl;
-        await supabaseClient.from('profiles').update({ gold: user.gold, current_sword_lvl: nextLvl }).eq('id', user.id);
-        document.getElementById('npc-msg').innerText = success ? "강화 성공!" : "실패일세... 하지만 파괴되진 않았어.";
-        updateUI();
+        if(success && !swords[nextLvl]) {
+            img.classList.remove('shake');
+            return alert("마지막 단계입니다!");
+        }
+
+        const nextGold = user.gold - s.upgrade_cost;
+        const { error } = await supabaseClient.from('profiles').update({ gold: nextGold, current_sword_lvl: nextLvl }).eq('id', user.id);
+
+        if(!error) {
+            setTimeout(() => {
+                user.gold = nextGold;
+                user.current_sword_lvl = nextLvl;
+                img.classList.remove('shake');
+                document.getElementById('npc-msg').innerText = success ? "오! 강화에 성공했구만!" : "쯧쯧.. 실패일세. 골드만 날렸어.";
+                updateUI();
+            }, 600);
+        }
     }
 
     async function redeem() {
-        const code = prompt("코드를 입력하세요.");
+        const code = prompt("보상 코드를 입력하세요.");
+        if(!code) return;
         const { data } = await supabaseClient.from('reward_codes').select('*').eq('code', code).single();
-        if(!data) return alert("없는 코드입니다.");
-        user.gold += data.reward_gold;
-        await supabaseClient.from('profiles').update({ gold: user.gold }).eq('id', user.id);
-        anim(data.reward_gold, 'plus');
+        if(!data) return alert("유효하지 않은 코드입니다.");
+        
+        const nextGold = user.gold + data.reward_gold;
+        await supabaseClient.from('profiles').update({ gold: nextGold }).eq('id', user.id);
+        user.gold = nextGold;
+        showMoney(data.reward_gold, 'plus');
         updateUI();
+        alert(`${data.reward_gold.toLocaleString()}G 보상이 지급되었습니다!`);
     }
+
     init();
 </script>
 </body>
