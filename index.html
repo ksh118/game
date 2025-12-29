@@ -3,71 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>codetbase - 강화</title>
+    <title>codetbase - 강화 게임</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #e6e9ed; font-family: 'Pretendard', sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .game-container { width: 100%; max-width: 400px; background: white; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; display: none; }
         
-        /* 정지 화면 커버 */
-        #ban-overlay {
-            position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9);
-            color: white; display: none; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 10000; text-align: center; padding: 20px;
-        }
+        /* 알림창 */
+        #ban-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; text-align: center; }
+        #full-effect { position: fixed; top:0; left:0; width:100%; height:100%; z-index: 9999; display: none; align-items: center; justify-content: center; font-size: 40px; font-weight: 900; color: white; pointer-events: none; }
 
-        /* 성공/실패 효과 (기존 요청사항) */
-        #full-effect {
-            position: fixed; top:0; left:0; width:100%; height:100%; z-index: 9999;
-            display: none; align-items: center; justify-content: center;
-            font-size: 40px; font-weight: 900; color: white;
-        }
+        .header { background: #2c3e50; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .gold-display { color: #f1c40f; font-weight: bold; font-size: 18px; position: relative; }
+        .money-anim { position: absolute; right: 0; top: -20px; animation: upFade 2s forwards; font-weight: bold; }
+        @keyframes upFade { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-50px); } }
 
-        .header { background: #2c3e50; color: white; padding: 15px; display: flex; justify-content: space-between; }
-        .money-anim { position: absolute; right: 10px; top: -20px; font-weight: bold; animation: upFade 2s forwards; }
-        @keyframes upFade { 0% { opacity:0; transform:translateY(0); } 100% { opacity:0; transform:translateY(-50px); } }
+        .img-area { background: #f0f0f0; height: 220px; margin: 15px; border-radius: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .sword-img { max-width: 80%; max-height: 80%; object-fit: contain; }
+        .hammering { animation: hammer 0.1s infinite; }
+        @keyframes hammer { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        .btn-group { padding: 15px; display: flex; gap: 10px; }
+        button { flex: 1; padding: 16px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
         
         .rank-box { width: 100%; max-width: 400px; background: white; margin-top: 15px; border-radius: 20px; padding: 15px; box-sizing: border-box; }
-        button { cursor: pointer; border: none; font-weight: bold; border-radius: 12px; }
+        .rank-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
     </style>
 </head>
 <body>
-<div id="loading">데이터 확인 중...</div>
+<div id="loading">데이터 로딩 중...</div>
 
-<div id="ban-overlay">
-    <h1 style="font-size: 50px;">🚫</h1>
-    <h2>임시 정지되었습니다.</h2>
-    <p>관리자에게 문의해주세요.</p>
-</div>
-
+<div id="ban-overlay"><h1>🚫</h1><h2>임시 정지되었습니다.</h2><p>관리자에게 문의해주세요.</p></div>
 <div id="full-effect"></div>
 
 <div class="game-container" id="game-ui">
     <div class="header">
         <span id="u-nick">...</span>
-        <div style="position:relative;" id="gold-area">
-            <span id="u-gold" style="color:#f1c40f; font-weight:bold;">0</span>G
-        </div>
+        <div class="gold-display" id="gold-container"><span id="u-gold">0</span>G</div>
     </div>
+
+    <div style="padding:15px; font-size:14px;"><b>루돌프:</b> <span id="npc-text" style="color:#666;">어서오게! 무엇을 강화하겠나?</span></div>
     
-    <div style="padding:15px; color:#555;"><b>루돌프:</b> <span id="npc-text">반갑네!</span></div>
-    <div style="background:#eee; height:200px; margin:10px; border-radius:15px; display:flex; align-items:center; justify-content:center;">
-        <img id="s-img" src="" style="max-width:80%; max-height:80%;">
+    <div class="img-area"><img id="s-img" src="" class="sword-img"></div>
+    
+    <div style="padding:0 20px 15px;">
+        <div id="s-name" style="font-size:20px; font-weight:bold;">이름</div>
+        <div id="s-desc" style="font-size:13px; color:#7f8c8d; margin-top:5px;">설명</div>
+        <div id="s-info" style="font-size:14px; color:#2c3e50; margin-top:10px; font-weight:bold;">비용: 0G | 확률: 0%</div>
     </div>
 
-    <div style="padding:15px;">
-        <div id="s-name" style="font-size:20px; font-weight:bold;">아이템</div>
-        <div id="s-desc" style="font-size:13px; color:#888;">설명</div>
-        <div id="s-info" style="font-weight:bold; margin-top:10px;">비용: 0G | 확률: 0%</div>
-    </div>
-
-    <div style="display:flex; gap:10px; padding:15px;">
-        <button onclick="handleUpgrade()" style="flex:1; padding:15px; background:#2c3e50; color:white;">강화하기</button>
+    <div class="btn-group">
+        <button onclick="redeem()" style="background:#f1f2f6;">코드 입력</button>
+        <button onclick="handleUpgrade()" style="background:#2c3e50; color:white;">강화하기</button>
     </div>
 </div>
 
 <div class="rank-box">
-    <h4 style="margin:0 0 10px 0;">🏆 명예의 전당</h4>
+    <h4 style="margin:0 0 10px 0;">🏆 전설의 순위</h4>
     <div id="rank-list"></div>
 </div>
 
@@ -81,23 +73,16 @@
         const { data: { session } } = await supabaseClient.auth.getSession();
         if(!session) { location.href="login.html"; return; }
 
-        // 유저 정보 로드 및 정지 확인
         const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
-        if(p.is_banned) {
-            document.getElementById('loading').style.display='none';
-            document.getElementById('ban-overlay').style.display='flex';
-            return;
-        }
+        if(p.is_banned) { document.getElementById('loading').style.display='none'; document.getElementById('ban-overlay').style.display='flex'; return; }
         user = p;
 
-        // 아이템 정보 로드
         const { data: s } = await supabaseClient.from('sword_data').select('*').order('level', { ascending: true });
         s.forEach(i => swords[i.level] = i);
 
-        document.getElementById('loading').style.display='none';
-        document.getElementById('game-ui').style.display='block';
-        updateUI();
-        loadRank();
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('game-ui').style.display = 'block';
+        updateUI(); loadRank();
     }
 
     function updateUI() {
@@ -105,9 +90,17 @@
         document.getElementById('u-nick').innerText = user.nickname + "님";
         document.getElementById('u-gold').innerText = user.gold.toLocaleString();
         document.getElementById('s-name').innerText = `[+${item.level-1}] ${item.name}`;
-        document.getElementById('s-desc').innerText = item.description || "설명 없음";
+        document.getElementById('s-desc').innerText = item.description || "설명이 없습니다.";
         document.getElementById('s-info').innerText = `비용: ${item.upgrade_cost.toLocaleString()}G | 확률: ${item.success_rate*100}%`;
         document.getElementById('s-img').src = item.image_url;
+    }
+
+    function animGold(amt, plus=false) {
+        const div = document.createElement('div'); div.className = 'money-anim';
+        div.style.color = plus ? '#3498db' : '#e74c3c';
+        div.innerText = (plus ? '+' : '-') + amt.toLocaleString() + 'G';
+        document.getElementById('gold-container').appendChild(div);
+        setTimeout(() => div.remove(), 2000);
     }
 
     function showEffect(success) {
@@ -120,19 +113,39 @@
 
     async function handleUpgrade() {
         const s = swords[user.current_sword_lvl];
-        if(user.gold < s.upgrade_cost) return alert("골드 부족!");
+        if(user.gold < s.upgrade_cost) return alert("골드가 부족합니다!");
+
+        const img = document.getElementById('s-img');
+        img.classList.add('hammering');
+        animGold(s.upgrade_cost);
 
         const success = Math.random() < s.success_rate;
         const nextLvl = success ? user.current_sword_lvl + 1 : user.current_sword_lvl;
-        if(success && !swords[nextLvl]) return alert("최고 레벨!");
+        if(success && !swords[nextLvl]) { img.classList.remove('hammering'); return alert("최고 레벨 도달!"); }
 
-        user.gold -= s.upgrade_cost;
-        await supabaseClient.from('profiles').update({ gold: user.gold, current_sword_lvl: nextLvl }).eq('id', user.id);
+        const nextGold = user.gold - s.upgrade_cost;
+        await supabaseClient.from('profiles').update({ gold: nextGold, current_sword_lvl: nextLvl }).eq('id', user.id);
+
+        setTimeout(() => {
+            img.classList.remove('hammering');
+            user.gold = nextGold; user.current_sword_lvl = nextLvl;
+            showEffect(success);
+            document.getElementById('npc-text').innerText = success ? "오! 대단한 무기가 탄생했군!" : "이런... 실패했구만. 다시 해보게.";
+            updateUI(); loadRank();
+        }, 800);
+    }
+
+    async function redeem() {
+        const code = prompt("코드를 입력하세요.");
+        if(!code) return;
+        const { data } = await supabaseClient.from('reward_codes').select('*').eq('code', code).single();
+        if(!data) return alert("잘못된 코드입니다.");
         
-        user.current_sword_lvl = nextLvl;
-        showEffect(success);
-        updateUI();
-        loadRank();
+        user.gold += data.reward_gold;
+        await supabaseClient.from('profiles').update({ gold: user.gold }).eq('id', user.id);
+        animGold(data.reward_gold, true);
+        updateUI(); loadRank();
+        alert("보상이 지급되었습니다!");
     }
 
     async function loadRank() {
@@ -141,7 +154,6 @@
             <div class="rank-item"><span>${i+1}. ${r.nickname}</span><b>${r.gold.toLocaleString()}G</b></div>
         `).join('');
     }
-
     init();
 </script>
 </body>
