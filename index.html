@@ -6,209 +6,183 @@
     <title>검 강화 게임 - codetbase</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background-color: #fff; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; margin: 0; }
-        .game-container { width: 100%; max-width: 400px; padding: 20px; text-align: center; }
+        body { background-color: #fff; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; margin: 0; padding-top: 20px; }
+        .game-container { width: 100%; max-width: 400px; padding: 20px; text-align: center; display: none; } /* 로그인 전까지 숨김 */
         
-        /* 상단 닉네임/골드 바 */
         .header-bar { 
-            border: 4px solid black; border-radius: 50px; padding: 10px 20px;
+            border: 5px solid black; border-radius: 50px; padding: 10px 25px;
             display: flex; justify-content: space-between; align-items: center; background: white;
-            font-size: 18px; font-weight: bold; margin-bottom: 10px;
+            font-size: 22px; font-weight: bold; margin-bottom: 15px;
         }
-        .rank-btn { background: black; color: white; border-radius: 20px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+        .rank-btn { background: black; color: white; border-radius: 20px; padding: 5px 15px; font-size: 14px; cursor: pointer; }
         
-        .log-msg { color: #000; font-weight: bold; margin-bottom: 15px; height: 24px; font-size: 18px; }
+        .log-msg { color: #000; font-weight: bold; margin-bottom: 10px; font-size: 24px; height: 30px; }
 
-        /* 결과 창 */
-        .status-box { background: #bbb; border-radius: 20px; margin-bottom: 15px; padding: 20px; min-height: 100px; }
-        .status-box h2 { margin: 0; font-size: 28px; }
-        .status-box p { margin: 5px 0 0; font-size: 24px; font-weight: bold; }
+        .status-box { background: #bbb; border-radius: 25px; margin-bottom: 20px; padding: 25px; }
+        .status-box h2 { margin: 0; font-size: 36px; color: #000; }
+        .status-box p { margin: 10px 0 0; font-size: 32px; font-weight: bold; }
 
-        /* 검 이미지 구역 */
-        .image-box { background: #bbb; border-radius: 20px; height: 250px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; overflow: hidden; }
-        .sword-img { width: 180px; transition: transform 0.2s; }
+        .image-box { background: #bbb; border-radius: 25px; height: 280px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .sword-img { width: 220px; transform: rotate(45deg); }
 
-        /* 설명 박스 */
-        .info-box { background: #bbb; border-radius: 20px; padding: 20px; margin-bottom: 15px; }
-        .info-box h3 { margin: 0 0 10px; font-size: 22px; }
-        .info-box p { margin: 0; color: #333; line-height: 1.4; font-size: 16px; }
+        .info-box { background: #bbb; border-radius: 25px; padding: 25px; margin-bottom: 20px; }
+        .info-box h3 { margin: 0 0 10px; font-size: 28px; }
+        .info-box p { margin: 0; color: #333; font-size: 20px; font-weight: bold; line-height: 1.5; }
 
-        /* 버튼 */
-        .btn-group { display: flex; gap: 10px; }
-        button { flex: 1; padding: 15px; border-radius: 20px; border: none; font-weight: bold; font-size: 20px; cursor: pointer; color: white; }
+        .btn-group { display: flex; gap: 15px; }
+        button { flex: 1; padding: 18px; border-radius: 25px; border: none; font-weight: bold; font-size: 26px; cursor: pointer; color: white; transition: 0.2s; }
         .sell-btn { background: #666; }
         .upgrade-btn { background: #444; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button:active { transform: scale(0.95); }
+        button:disabled { background: #999; cursor: not-allowed; }
 
-        /* 로그인 모달 */
-        #auth-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; }
-        .auth-form { width: 80%; max-width: 300px; text-align: center; }
-        input { margin: 5px 0; padding: 12px; width: 100%; border: 1px solid #ccc; border-radius: 10px; box-sizing: border-box; }
-        .auth-btns { display: flex; gap: 5px; margin-top: 10px; }
+        /* 로그인 레이어 */
+        #auth-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; }
+        .auth-card { width: 85%; max-width: 320px; text-align: center; border: 3px solid #000; padding: 30px; border-radius: 30px; }
+        input { margin: 8px 0; padding: 15px; width: 100%; border: 2px solid #000; border-radius: 15px; box-sizing: border-box; font-size: 16px; }
     </style>
 </head>
 <body>
 
 <div id="auth-overlay">
-    <div class="auth-form">
-        <h2 style="margin-bottom: 20px;">검 강화 게임</h2>
-        <input type="email" id="email" placeholder="이메일">
+    <div class="auth-card">
+        <h1 style="margin-top:0;">검 강화 게임</h1>
+        <input type="email" id="email" placeholder="이메일 주소">
         <input type="password" id="password" placeholder="비밀번호">
-        <input type="text" id="nickname" placeholder="닉네임 (회원가입 전용)">
-        <div class="auth-btns">
-            <button onclick="handleSignUp()" style="background:#666; font-size:14px;">회원가입</button>
-            <button onclick="handleLogin()" style="background:#000; font-size:14px;">로그인</button>
+        <input type="text" id="nickname" placeholder="사용할 닉네임 (가입 시)">
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button onclick="handleSignUp()" style="background:#666; font-size:18px;">회원가입</button>
+            <button onclick="handleLogin()" style="background:#000; font-size:18px;">로그인</button>
         </div>
     </div>
 </div>
 
-<div class="game-container">
+<div class="game-container" id="game-ui">
     <div class="header-bar">
         <span id="nick-display">...님</span>
         <span class="rank-btn" onclick="showRank()">순위</span>
-        <span>골드:<span id="gold-display">0</span>G</span>
+        <span id="gold-total">골드:0G</span>
     </div>
 
-    <div class="log-msg" id="log-display">로그인 해주세요</div>
+    <div class="log-msg" id="log-display"></div>
 
     <div class="status-box">
-        <h2 id="result-text">강화 대기 중</h2>
-        <p id="level-change">-</p>
+        <h2 id="result-title">강화 대기 중</h2>
+        <p id="level-label">-</p>
     </div>
 
     <div class="image-box">
-        <img id="sword-image" src="https://cdn-icons-png.flaticon.com/512/3233/3233514.png" class="sword-img">
+        <img id="sword-icon" src="https://cdn-icons-png.flaticon.com/512/3233/3233514.png" class="sword-img">
     </div>
 
     <div class="info-box">
-        <h3 id="sword-name">검 정보 로딩 중...</h3>
-        <p id="sword-desc">-</p>
+        <h3 id="display-name">정보 불러오는 중...</h3>
+        <p id="display-desc">-</p>
     </div>
 
     <div class="btn-group">
-        <button class="sell-btn" id="sell-btn" onclick="handleSell()">판매</button>
-        <button class="upgrade-btn" id="upgrade-btn" onclick="handleUpgrade()">강화</button>
+        <button class="sell-btn" id="btn-sell" onclick="handleSell()">판매</button>
+        <button class="upgrade-btn" id="btn-upgrade" onclick="handleUpgrade()">강화</button>
     </div>
 </div>
 
 <script>
-    // 유저가 제공한 Supabase 정보 적용
     const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentUser = null;
-    let swordStats = {};
+    let userAccount = null;
+    let swordsMaster = {};
 
-    // 게임 시작 시 실행
-    async function init() {
-        // DB에서 검 정보(확률, 비용 등) 가져오기
-        const { data } = await supabaseClient.from('sword_data').select('*');
-        if (data) data.forEach(s => swordStats[s.level] = s);
-        
-        // 자동 로그인 체크
+    async function start() {
+        // 1. 검 데이터 먼저 로드
+        const { data: sData, error: sError } = await supabaseClient.from('sword_data').select('*');
+        if (sData) sData.forEach(s => swordsMaster[s.level] = s);
+
+        // 2. 세션 체크
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
-            document.getElementById('auth-overlay').style.display = 'none';
-            loadUser(session.user.id);
+            await fetchUser(session.user.id);
         }
     }
 
-    async function loadUser(uid) {
-        const { data } = await supabaseClient.from('profiles').select('*').eq('id', uid).single();
+    async function fetchUser(uid) {
+        const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', uid).single();
         if (data) {
-            currentUser = data;
-            updateUI();
-        }
-    }
-
-    function updateUI() {
-        const sword = swordStats[currentUser.current_sword_lvl];
-        document.getElementById('nick-display').innerText = currentUser.nickname + "님";
-        document.getElementById('gold-display').innerText = currentUser.gold.toLocaleString();
-        document.getElementById('sword-name').innerText = `[${sword.level}LV] ${sword.name}`;
-        document.getElementById('sword-desc').innerText = sword.description;
-        document.getElementById('log-display').innerText = "준비 완료";
-        
-        // 판매는 1레벨 초과일 때만 가능
-        document.getElementById('sell-btn').disabled = (currentUser.current_sword_lvl === 1);
-    }
-
-    // 강화 버튼 클릭
-    async function handleUpgrade() {
-        const currentSword = swordStats[currentUser.current_sword_lvl];
-        
-        if (currentUser.gold < currentSword.upgrade_cost) {
-            alert("골드가 부족합니다!");
-            return;
-        }
-
-        const success = Math.random() < currentSword.success_rate;
-        let newLvl = currentUser.current_sword_lvl;
-
-        if (success) {
-            newLvl++;
-            document.getElementById('result-text').innerText = "강화 성공!";
-            document.getElementById('level-change').innerText = `${currentUser.current_sword_lvl}LV → ${newLvl}LV`;
+            userAccount = data;
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
+            refresh();
         } else {
-            newLvl = Math.max(1, newLvl - 1);
-            document.getElementById('result-text').innerText = "강화 실패...";
-            document.getElementById('level-change').innerText = "레벨이 하락했습니다.";
-        }
-
-        const newGold = currentUser.gold - currentSword.upgrade_cost;
-        
-        // DB 저장
-        const { error } = await supabaseClient.from('profiles').update({ 
-            gold: newGold, 
-            current_sword_lvl: newLvl 
-        }).eq('id', currentUser.id);
-
-        if (!error) {
-            currentUser.gold = newGold;
-            currentUser.current_sword_lvl = newLvl;
-            document.getElementById('log-display').innerText = `-${currentSword.upgrade_cost}G 사용`;
-            updateUI();
+            console.error("User profile not found. Make sure SQL RLS is disabled.");
         }
     }
 
-    // 판매 버튼 클릭
+    function refresh() {
+        if (!userAccount || !swordsMaster[userAccount.current_sword_lvl]) return;
+        
+        const current = swordsMaster[userAccount.current_sword_lvl];
+        document.getElementById('nick-display').innerText = userAccount.nickname + "님";
+        document.getElementById('gold-total').innerText = `골드:${userAccount.gold.toLocaleString()}G`;
+        document.getElementById('display-name').innerText = `[${current.level}LV] ${current.name}`;
+        document.getElementById('display-desc').innerText = current.description;
+        
+        document.getElementById('btn-sell').disabled = (userAccount.current_sword_lvl === 1);
+    }
+
+    async function handleUpgrade() {
+        const info = swordsMaster[userAccount.current_sword_lvl];
+        if (userAccount.gold < info.upgrade_cost) return alert("골드가 부족합니다!");
+
+        const isSuccess = Math.random() < info.success_rate;
+        let nextLvl = isSuccess ? userAccount.current_sword_lvl + 1 : Math.max(1, userAccount.current_sword_lvl - 1);
+        let nextGold = userAccount.gold - info.upgrade_cost;
+
+        const { error } = await supabaseClient.from('profiles').update({ 
+            gold: nextGold, current_sword_lvl: nextLvl 
+        }).eq('id', userAccount.id);
+
+        if (!error) {
+            userAccount.gold = nextGold;
+            userAccount.current_sword_lvl = nextLvl;
+            document.getElementById('log-display').innerText = `-${info.upgrade_cost}G 사용`;
+            document.getElementById('result-title').innerText = isSuccess ? "강화 성공!" : "강화 실패...";
+            document.getElementById('level-label').innerText = isSuccess ? `${nextLvl-1}LV → ${nextLvl}LV` : "레벨이 하락했습니다.";
+            refresh();
+        }
+    }
+
     async function handleSell() {
-        const currentSword = swordStats[currentUser.current_sword_lvl];
-        const newGold = currentUser.gold + currentSword.sell_price;
-        
+        const info = swordsMaster[userAccount.current_sword_lvl];
+        let nextGold = userAccount.gold + info.sell_price;
+
         const { error } = await supabaseClient.from('profiles').update({ 
-            gold: newGold, 
-            current_sword_lvl: 1 
-        }).eq('id', currentUser.id);
+            gold: nextGold, current_sword_lvl: 1 
+        }).eq('id', userAccount.id);
 
         if (!error) {
-            document.getElementById('result-text').innerText = "판매 완료!";
-            document.getElementById('level-change').innerText = `${currentSword.level}LV 판매`;
-            document.getElementById('log-display').innerText = `+${currentSword.sell_price}G 획득`;
-            currentUser.gold = newGold;
-            currentUser.current_sword_lvl = 1;
-            updateUI();
+            document.getElementById('result-title').innerText = "판매 완료!";
+            document.getElementById('level-label').innerText = `${info.level}LV 판매`;
+            document.getElementById('log-display').innerText = `+${info.sell_price}G 획득`;
+            userAccount.gold = nextGold;
+            userAccount.current_sword_lvl = 1;
+            refresh();
         }
     }
 
-    // 회원가입
     async function handleSignUp() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        const nickname = document.getElementById('nickname').value;
-
-        if(!nickname) return alert("닉네임을 입력하세요");
+        const nick = document.getElementById('nickname').value;
+        if (!nick) return alert("닉네임을 적어주세요!");
 
         const { data, error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) alert(error.message);
-        else {
-            await supabaseClient.from('profiles').insert([{ id: data.user.id, nickname: nickname, gold: 5000 }]);
-            alert("가입 성공! 이제 로그인 해주세요.");
-        }
+        if (error) return alert(error.message);
+        
+        await supabaseClient.from('profiles').insert([{ id: data.user.id, nickname: nick, gold: 5000 }]);
+        alert("가입 완료! 이제 로그인을 눌러주세요.");
     }
 
-    // 로그인
     async function handleLogin() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
@@ -217,14 +191,12 @@
         else location.reload();
     }
 
-    // 순위보기
     async function showRank() {
         const { data } = await supabaseClient.from('profiles').select('nickname, gold').order('gold', { ascending: false }).limit(5);
-        let list = data.map((u, i) => `${i+1}등: ${u.nickname} (${u.gold}G)`).join('\n');
-        alert("🏆 실시간 부자 순위 🏆\n\n" + list);
+        alert("🏆 부자 순위 🏆\n" + data.map((u, i) => `${i+1}위: ${u.nickname} (${u.gold}G)`).join('\n'));
     }
 
-    init();
+    start();
 </script>
 </body>
 </html>
