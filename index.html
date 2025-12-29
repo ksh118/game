@@ -2,115 +2,125 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>codetbase 관리자 - 파일 업로드형</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>codetbase - 크리스마스 강화</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Pretendard', sans-serif; background: #f0f2f5; margin: 0; padding-top: 90px; }
-        .header { position: fixed; top: 0; width: 100%; background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-sizing: border-box; }
-        .save-btn { background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #1e8449; }
-        .save-btn:active { transform: translateY(2px); box-shadow: none; }
-        .container { max-width: 1100px; margin: auto; padding: 20px; }
-        /* 디자인 대폭 수정 */
-        .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; display: grid; grid-template-columns: 70px 1.5fr 1fr 1fr 2fr 50px; gap: 15px; align-items: center; border: 1px solid #e0e0e0; }
-        .img-preview-box { width: 60px; height: 60px; background: #f9f9f9; border: 1px dashed #ccc; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .img-preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 14px; }
-        label { font-size: 11px; color: #7f8c8d; font-weight: bold; margin-bottom: 5px; display: block; }
-        .section-title { margin-top: 40px; border-left: 5px solid #2c3e50; padding-left: 15px; color: #2c3e50; }
+        :root { --main-red: #c0392b; --dark-gray: #2c3e50; }
+        body { background-color: #e6e9ed; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; margin: 0; padding: 20px 0; }
+        .game-container { width: 100%; max-width: 420px; background: white; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; display: none; }
+        
+        .header-bar { background: var(--dark-gray); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .gold-display { font-size: 18px; font-weight: bold; position: relative; }
+
+        .npc-talk { background: #f8f9fa; border: 1px solid #ddd; border-radius: 15px; margin: 15px; padding: 15px; text-align: left; }
+        .npc-name { font-weight: bold; color: var(--main-red); display: block; margin-bottom: 5px; }
+
+        .image-box { background: #eee; height: 250px; display: flex; align-items: center; justify-content: center; margin: 0 15px; border-radius: 20px; overflow: hidden; }
+        .sword-img { max-width: 85%; max-height: 85%; object-fit: contain; transition: 0.1s; }
+        .shake { animation: shake 0.1s infinite; }
+        @keyframes shake { 0% {transform: rotate(-2deg);} 50% {transform: rotate(2deg);} 100% {transform: rotate(-2deg);} }
+
+        .money-effect { position: absolute; right: 0; top: 0; font-weight: bold; font-size: 26px; animation: floatUp 2.5s ease-out forwards; pointer-events: none; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(-130px); opacity: 0; } }
+
+        .btn-group { display: flex; gap: 10px; padding: 15px; }
+        button { flex: 1; padding: 16px; border-radius: 15px; border: none; font-weight: bold; font-size: 18px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2 style="margin:0;">codetbase Admin</h2>
-        <button class="save-btn" onclick="saveAll()">변경사항 한꺼번에 저장</button>
+<div id="loading" style="margin-top: 100px;">로딩 중...</div>
+<div class="game-container" id="game-ui">
+    <div class="header-bar">
+        <span id="nick-display" style="color:#f1c40f;">님</span>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button onclick="redeemCode()" style="background:#f1c40f; color:#333; font-size:12px; padding:5px 10px; border-radius:5px; border:none; font-weight:bold;">보상코드</button>
+            <div class="gold-display" id="gold-anchor"><span id="gold-display">0G</span></div>
+        </div>
     </div>
-
-    <div class="container">
-        <h3 class="section-title">⚔️ 강화 레벨 & 이미지 업로드 관리</h3>
-        <div id="sword-list"></div>
-        <button onclick="addSword()" style="width:100%; padding:15px; cursor:pointer; background:#fff; border:2px dashed #ccc; border-radius:15px; font-weight:bold; color:#7f8c8d;">+ 새로운 강화 레벨 추가</button>
-
-        <h3 class="section-title">🎁 보상 코드 시스템</h3>
-        <div id="code-list"></div>
-        <button onclick="addCode()" style="width:100%; padding:15px; cursor:pointer; background:#e67e22; color:white; border:none; border-radius:15px; font-weight:bold;">+ 보상 코드 추가</button>
+    <div class="npc-talk">
+        <span class="npc-name" id="npc-name">대장장이 루돌프</span>
+        <div id="npc-msg">"무엇을 강화하겠나?"</div>
     </div>
+    <div class="image-box"><img id="sword-img" src="" class="sword-img"></div>
+    <div style="padding:15px;">
+        <div id="sw-name" style="font-size:18px; font-weight:bold;">이름</div>
+        <div id="cost-info" style="font-size:13px; color:#888; margin-top:5px;">비용: 0G | 확률: 0%</div>
+    </div>
+    <div class="btn-group">
+        <button onclick="handleSell()" style="background:#f1f2f6; color:#999;">판매</button>
+        <button onclick="handleUpgrade()" style="background:var(--dark-gray); color:white;">강화하기</button>
+    </div>
+</div>
 
 <script>
     const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    let swordData = [], rewardCodes = [];
+    let user = null, swords = {};
 
-    async function load() {
-        const { data: s } = await supabaseClient.from('sword_data').select('*').order('level', { ascending: true });
-        const { data: r } = await supabaseClient.from('reward_codes').select('*');
-        swordData = s || []; rewardCodes = r || [];
-        render();
+    async function init() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.href="login.html"; return; }
+        const { data: s } = await supabaseClient.from('sword_data').select('*');
+        s.forEach(item => swords[item.level] = item);
+        const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+        user = p;
+        document.getElementById('loading').style.display='none';
+        document.getElementById('game-ui').style.display='block';
+        updateUI();
     }
 
-    // 파일 업로드 (버킷 이름을 codet-img로 수정함)
-    async function uploadFile(file, index) {
-        if (!file) return;
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${index}.${fileExt}`;
-        const filePath = `items/${fileName}`;
-
-        // codet-img 버킷 사용
-        const { error } = await supabaseClient.storage.from('codet-img').upload(filePath, file);
-        if (error) { alert("업로드 실패: " + error.message); return; }
-
-        const { data: { publicUrl } } = supabaseClient.storage.from('codet-img').getPublicUrl(filePath);
-        swordData[index].image_url = publicUrl;
-        render(); 
+    function updateUI() {
+        const s = swords[user.current_sword_lvl];
+        if(!s) return;
+        document.getElementById('nick-display').innerText = user.nickname + "님";
+        document.getElementById('gold-display').innerText = user.gold.toLocaleString() + "G";
+        document.getElementById('sw-name').innerText = `[+${user.current_sword_lvl-1}] ${s.name}`;
+        document.getElementById('cost-info').innerText = `비용: ${s.upgrade_cost.toLocaleString()}G | 확률: ${Math.floor(s.success_rate*100)}%`;
+        document.getElementById('sword-img').src = s.image_url || "https://via.placeholder.com/150";
     }
 
-    function render() {
-        const sList = document.getElementById('sword-list');
-        sList.innerHTML = '';
-        swordData.forEach((s, i) => {
-            const div = document.createElement('div');
-            div.className = 'card';
-            div.innerHTML = `
-                <div><label>LV</label><input type="number" value="${s.level}" onchange="swordData[${i}].level=Number(this.value)"></div>
-                <div><label>이름</label><input type="text" value="${s.name}" onchange="swordData[${i}].name=this.value"></div>
-                <div><label>강화비용</label><input type="number" value="${s.upgrade_cost}" onchange="swordData[${i}].upgrade_cost=Number(this.value)"></div>
-                <div><label>성공확률(0~1)</label><input type="number" step="0.01" value="${s.success_rate}" onchange="swordData[${i}].success_rate=Number(this.value)"></div>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <div class="img-preview-box"><img src="${s.image_url || ''}"></div>
-                    <div style="flex:1"><label>이미지 선택</label><input type="file" style="font-size:11px" onchange="uploadFile(this.files[0], ${i})"></div>
-                </div>
-                <button onclick="swordData.splice(${i},1); render()" style="color:#e74c3c; border:none; background:none; cursor:pointer; font-weight:bold;">삭제</button>
-            `;
-            sList.appendChild(div);
-        });
-
-        const cList = document.getElementById('code-list');
-        cList.innerHTML = '';
-        rewardCodes.forEach((c, i) => {
-            const div = document.createElement('div');
-            div.className = 'card';
-            div.style.gridTemplateColumns = "1fr 1fr 50px";
-            div.innerHTML = `
-                <div><label>코드명</label><input type="text" value="${c.code}" onchange="rewardCodes[${i}].code=this.value"></div>
-                <div><label>지급 골드</label><input type="number" value="${c.reward_gold}" onchange="rewardCodes[${i}].reward_gold=Number(this.value)"></div>
-                <button onclick="rewardCodes.splice(${i},1); render()" style="color:#e74c3c; border:none; background:none; cursor:pointer; font-weight:bold;">삭제</button>
-            `;
-            cList.appendChild(div);
-        });
+    function animateGold(amt, type) {
+        const eff = document.createElement('div');
+        eff.className = 'money-effect';
+        eff.style.color = type==='plus' ? '#3498db' : '#e74c3c';
+        eff.innerText = (type==='plus'?'+':'-') + amt.toLocaleString() + "G";
+        document.getElementById('gold-anchor').appendChild(eff);
+        setTimeout(() => eff.remove(), 2500);
     }
 
-    function addSword() { swordData.push({ level: swordData.length+1, name: '', upgrade_cost: 1000, success_rate: 0.5, image_url: '' }); render(); }
-    function addCode() { rewardCodes.push({ code: 'CODE', reward_gold: 10000 }); render(); }
-
-    async function saveAll() {
-        await supabaseClient.from('sword_data').delete().neq('level', -1);
-        await supabaseClient.from('sword_data').insert(swordData);
-        await supabaseClient.from('reward_codes').delete().neq('reward_gold', -1);
-        if(rewardCodes.length > 0) await supabaseClient.from('reward_codes').insert(rewardCodes.map(c => ({ code: c.code, reward_gold: c.reward_gold })));
-        alert("codetbase의 모든 데이터가 저장되었습니다!");
+    async function handleUpgrade() {
+        const s = swords[user.current_sword_lvl];
+        if(user.gold < s.upgrade_cost) { alert("골드가 부족합니다."); return; }
+        document.getElementById('sword-img').classList.add('shake');
+        animateGold(s.upgrade_cost, 'minus');
+        const success = Math.random() < s.success_rate;
+        const nextLvl = success ? user.current_sword_lvl + 1 : user.current_sword_lvl;
+        const nextGold = user.gold - s.upgrade_cost;
+        await supabaseClient.from('profiles').update({ gold: nextGold, current_sword_lvl: nextLvl }).eq('id', user.id);
+        setTimeout(() => {
+            document.getElementById('sword-img').classList.remove('shake');
+            user.gold = nextGold; user.current_sword_lvl = nextLvl;
+            document.getElementById('npc-msg').innerText = success ? "강화 성공!" : "실패... 유지되었습니다.";
+            updateUI();
+        }, 600);
     }
-    load();
+
+    async function redeemCode() {
+        const code = prompt("보상코드를 입력하세요.");
+        if(!code) return;
+        const { data } = await supabaseClient.from('reward_codes').select('*').eq('code', code).single();
+        if(!data) { alert("잘못된 코드입니다."); return; }
+        const nextGold = user.gold + data.reward_gold;
+        await supabaseClient.from('profiles').update({ gold: nextGold }).eq('id', user.id);
+        user.gold = nextGold;
+        animateGold(data.reward_gold, 'plus');
+        updateUI();
+        alert(data.reward_gold + "G 지급 완료!");
+    }
+
+    init();
 </script>
 </body>
 </html>
