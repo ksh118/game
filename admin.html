@@ -2,15 +2,16 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>codetbase 관리자</title>
+    <title>codetbase Admin - 최종</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Pretendard', sans-serif; background: #f0f2f5; margin: 0; padding-top: 90px; }
-        .header { position: fixed; top: 0; width: 100%; background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-sizing: border-box; }
-        .save-btn { background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #1e8449; }
+        body { font-family: 'Pretendard', sans-serif; background: #f0f2f5; margin: 0; padding-top: 80px; }
+        .header { position: fixed; top: 0; width: 100%; background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .save-btn { background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .save-btn:hover { background: #2ecc71; }
         .container { max-width: 1100px; margin: auto; padding: 20px; }
         .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; display: grid; grid-template-columns: 70px 1.5fr 1fr 1fr 2fr 50px; gap: 15px; align-items: center; border: 1px solid #e0e0e0; }
-        .img-preview { width: 60px; height: 60px; background: #eee; border-radius: 10px; object-fit: contain; }
+        .img-preview { width: 60px; height: 60px; background: #eee; border-radius: 10px; object-fit: contain; border: 1px solid #ddd; }
         input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; }
         label { font-size: 11px; color: #7f8c8d; font-weight: bold; margin-bottom: 5px; display: block; }
         .section-title { margin-top: 40px; border-left: 5px solid #2c3e50; padding-left: 15px; color: #2c3e50; }
@@ -19,11 +20,11 @@
 <body>
     <div class="header">
         <h2 style="margin:0;">codetbase Admin</h2>
-        <button class="save-btn" onclick="saveAll()">모든 설정 저장</button>
+        <button class="save-btn" onclick="saveAll()">모든 설정 저장하기</button>
     </div>
 
     <div class="container">
-        <h3 class="section-title">⚔️ 강화 레벨 설정 (1레벨부터 순서대로 작성하세요)</h3>
+        <h3 class="section-title">⚔️ 강화 레벨 설정 (LV 1부터 순서대로 작성)</h3>
         <div id="sword-list"></div>
         <button onclick="addSword()" style="width:100%; padding:15px; cursor:pointer; background:#fff; border:2px dashed #ccc; border-radius:15px; font-weight:bold; color:#7f8c8d;">+ 레벨 추가</button>
 
@@ -49,7 +50,6 @@
     async function uploadFile(file, index) {
         if (!file) return;
         const fileName = `${Date.now()}_${index}.${file.name.split('.').pop()}`;
-        // 버킷 이름 codet-img 확인
         const { error } = await supabaseClient.storage.from('codet-img').upload(`items/${fileName}`, file);
         if (error) return alert("업로드 실패: " + error.message);
 
@@ -71,9 +71,9 @@
                 <div><label>확률(0~1)</label><input type="number" step="0.01" value="${s.success_rate}" onchange="swordData[${i}].success_rate=Number(this.value)"></div>
                 <div style="display:flex; gap:10px; align-items:center;">
                     <img src="${s.image_url || ''}" class="img-preview">
-                    <input type="file" onchange="uploadFile(this.files[0], ${i})">
+                    <input type="file" style="font-size:10px" onchange="uploadFile(this.files[0], ${i})">
                 </div>
-                <button onclick="swordData.splice(${i},1); render()" style="color:red; border:none; background:none; cursor:pointer;">X</button>
+                <button onclick="swordData.splice(${i},1); render()" style="color:red; border:none; background:none; cursor:pointer;">삭제</button>
             `;
             sList.appendChild(div);
         });
@@ -85,23 +85,23 @@
             div.className = 'card';
             div.style.gridTemplateColumns = "1fr 1fr 50px";
             div.innerHTML = `
-                <div><label>코드</label><input type="text" value="${c.code}" onchange="rewardCodes[${i}].code=this.value"></div>
-                <div><label>골드</label><input type="number" value="${c.reward_gold}" onchange="rewardCodes[${i}].reward_gold=Number(this.value)"></div>
-                <button onclick="rewardCodes.splice(${i},1); render()" style="color:red; border:none; background:none; cursor:pointer;">X</button>
+                <div><label>코드명</label><input type="text" value="${c.code}" onchange="rewardCodes[${i}].code=this.value"></div>
+                <div><label>지급 골드</label><input type="number" value="${c.reward_gold}" onchange="rewardCodes[${i}].reward_gold=Number(this.value)"></div>
+                <button onclick="rewardCodes.splice(${i},1); render()" style="color:red; border:none; background:none; cursor:pointer;">삭제</button>
             `;
             cList.appendChild(div);
         });
     }
 
-    function addSword() { swordData.push({ level: swordData.length + 1, name: '새 아이템', upgrade_cost: 1000, success_rate: 0.7, image_url: '' }); render(); }
-    function addCode() { rewardCodes.push({ code: 'CODE123', reward_gold: 10000 }); render(); }
+    function addSword() { swordData.push({ level: swordData.length + 1, name: '검', upgrade_cost: 1000, success_rate: 0.5, image_url: '' }); render(); }
+    function addCode() { rewardCodes.push({ code: '1234', reward_gold: 10000 }); render(); }
 
     async function saveAll() {
         await supabaseClient.from('sword_data').delete().neq('level', -1);
         await supabaseClient.from('sword_data').insert(swordData);
         await supabaseClient.from('reward_codes').delete().neq('reward_gold', -1);
         if(rewardCodes.length > 0) await supabaseClient.from('reward_codes').insert(rewardCodes);
-        alert("codetbase 설정 저장 완료!");
+        alert("모든 설정 저장 완료!");
     }
     load();
 </script>
