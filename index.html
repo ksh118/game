@@ -3,42 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>codetbase - 강화 게임</title>
+    <title>codetbase - 전설의 강화</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #e6e9ed; font-family: sans-serif; display: flex; justify-content: center; margin: 0; padding: 20px 0; }
+        body { background: #e6e9ed; font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
         .game-container { width: 100%; max-width: 420px; background: white; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; display: none; }
         .header { background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .image-area { background: #eee; height: 250px; display: flex; align-items: center; justify-content: center; margin: 0 15px; border-radius: 20px; position: relative; }
+        .image-area { background: #eee; height: 250px; display: flex; align-items: center; justify-content: center; margin: 15px; border-radius: 20px; position: relative; }
         .sword-img { max-width: 80%; max-height: 80%; object-fit: contain; }
-        .shake { animation: shake 0.1s infinite; }
-        @keyframes shake { 0% {transform: rotate(-2deg);} 50% {transform: rotate(2deg);} 100% {transform: rotate(-2deg);} }
-        .money-eff { position: absolute; right: 20px; top: 10px; font-weight: bold; font-size: 24px; animation: floatUp 2.5s forwards; pointer-events: none; }
-        @keyframes floatUp { 0% { opacity:0; transform:translateY(0); } 10% { opacity:1; } 100% { opacity:0; transform:translateY(-120px); } }
+        .hammering { animation: hammer 0.1s infinite; }
+        @keyframes hammer { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .btn-group { display: flex; gap: 10px; padding: 15px; }
         button { flex: 1; padding: 16px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; }
+        
+        /* 순위표 스타일 */
+        .rank-box { width: 100%; max-width: 420px; background: white; margin-top: 20px; border-radius: 20px; padding: 15px; box-sizing: border-box; }
+        .rank-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+        .rank-item:last-child { border: none; }
     </style>
 </head>
 <body>
 <div id="loading">로딩 중...</div>
+
 <div class="game-container" id="game-ui">
     <div class="header">
-        <span id="nick-display" style="color:#f1c40f;">로딩중...</span>
-        <div style="display:flex; gap:10px; align-items:center;">
-            <button onclick="redeem()" style="background:#f1c40f; color:#333; padding:5px 10px; font-size:12px; height:auto;">보상코드</button>
-            <div id="gold-anchor" style="position:relative;"><span id="gold-display" style="font-weight:bold;">0G</span></div>
-        </div>
+        <span id="nick-display" style="color:#f1c40f; font-weight:bold;">로딩중</span>
+        <span id="gold-display" style="font-weight:bold;">0G</span>
     </div>
-    <div style="padding:15px; font-weight:bold; color:#c0392b;" id="npc-msg">"무엇을 강화하겠나?"</div>
+    
+    <div style="padding:15px; background:#f8f9fa; margin:15px; border-radius:15px; border:1px solid #ddd;">
+        <b id="npc-msg">"어서오게! 강화를 시작할텐가?"</b>
+    </div>
+
     <div class="image-area"><img id="sword-img" src="" class="sword-img"></div>
-    <div style="padding:15px;">
-        <div id="sw-name" style="font-size:20px; font-weight:bold;">아이템</div>
-        <div id="sw-info" style="font-size:13px; color:#888;">비용: 0G | 확률: 0%</div>
+    
+    <div style="padding:0 20px;">
+        <div id="sw-name" style="font-size:22px; font-weight:bold;">이름</div>
+        <div id="sw-desc" style="font-size:14px; color:#7f8c8d; margin-top:5px;">설명내용</div>
+        <div id="sw-info" style="font-size:13px; color:#34495e; margin-top:8px; font-weight:bold;">비용: 0G | 확률: 0%</div>
     </div>
+
     <div class="btn-group">
-        <button onclick="handleSell()" style="background:#f1f2f6; color:#999;">판매</button>
         <button onclick="handleUpgrade()" style="background:#2c3e50; color:white;">강화하기</button>
     </div>
+</div>
+
+<div class="rank-box" id="rank-box" style="display:none;">
+    <h3 style="margin-top:0; font-size:16px; border-left:4px solid #2c3e50; padding-left:10px;">🏆 실시간 골드 순위</h3>
+    <div id="rank-list"></div>
 </div>
 
 <script>
@@ -52,72 +64,68 @@
         if (!session) { location.href="login.html"; return; }
         
         const { data: s } = await supabaseClient.from('sword_data').select('*').order('level', { ascending: true });
-        if(!s || s.length === 0) { document.getElementById('loading').innerText = "어드민에서 레벨 1 데이터를 만드세요!"; return; }
         s.forEach(i => swords[i.level] = i);
 
-        let { data: p } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
-        if (!p) {
-            const { data: newUser } = await supabaseClient.from('profiles').insert([{ id: session.user.id, nickname: '모험가', gold: 1000, current_sword_lvl: s[0].level }]).select().single();
-            p = newUser;
-        }
+        const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
         user = p;
-        if (!swords[user.current_sword_lvl]) user.current_sword_lvl = s[0].level;
-
+        
         document.getElementById('loading').style.display='none';
         document.getElementById('game-ui').style.display='block';
+        document.getElementById('rank-box').style.display='block';
+        
         updateUI();
+        loadRanking();
     }
 
     function updateUI() {
-        const s = swords[user.current_sword_lvl];
+        const s = swords[user.current_sword_lvl] || swords[1];
         document.getElementById('nick-display').innerText = user.nickname + "님";
         document.getElementById('gold-display').innerText = user.gold.toLocaleString() + "G";
         document.getElementById('sw-name').innerText = `[+${s.level-1}] ${s.name}`;
+        document.getElementById('sw-desc').innerText = s.description || "설명이 없습니다.";
         document.getElementById('sw-info').innerText = `비용: ${s.upgrade_cost.toLocaleString()}G | 확률: ${Math.floor(s.success_rate*100)}%`;
         document.getElementById('sword-img').src = s.image_url || "https://via.placeholder.com/200";
     }
 
-    function showMoney(amt, type) {
-        const e = document.createElement('div'); e.className = 'money-eff';
-        e.style.color = type==='plus'?'#3498db':'#e74c3c';
-        e.innerText = (type==='plus'?'+':'-') + amt.toLocaleString() + 'G';
-        document.getElementById('gold-anchor').appendChild(e);
-        setTimeout(() => e.remove(), 2500);
+    async function loadRanking() {
+        const { data } = await supabaseClient.from('profiles').select('nickname, gold').order('gold', { ascending: false }).limit(5);
+        const list = document.getElementById('rank-list');
+        list.innerHTML = data.map((r, i) => `
+            <div class="rank-item">
+                <span><b>${i+1}위</b> ${r.nickname}</span>
+                <span style="color:#27ae60">${r.gold.toLocaleString()}G</span>
+            </div>
+        `).join('');
     }
 
     async function handleUpgrade() {
         const s = swords[user.current_sword_lvl];
-        if(user.gold < s.upgrade_cost) { alert("골드 부족!"); return; }
+        if(user.gold < s.upgrade_cost) return alert("골드가 부족합니다!");
 
         const img = document.getElementById('sword-img');
-        img.classList.add('shake');
-        showMoney(s.upgrade_cost, 'minus');
-
+        img.classList.add('hammering');
+        
         const success = Math.random() < s.success_rate;
         const nextLvl = success ? user.current_sword_lvl + 1 : user.current_sword_lvl;
         
-        if(success && !swords[nextLvl]) { img.classList.remove('shake'); alert("최고 레벨!"); return; }
-
-        const { error } = await supabaseClient.from('profiles').update({ gold: user.gold - s.upgrade_cost, current_sword_lvl: nextLvl }).eq('id', user.id);
-        if(!error) {
-            setTimeout(() => {
-                user.gold -= s.upgrade_cost; user.current_sword_lvl = nextLvl;
-                img.classList.remove('shake');
-                document.getElementById('npc-msg').innerText = success ? "강화 성공!" : "강화 실패...";
-                updateUI();
-            }, 600);
+        if(success && !swords[nextLvl]) {
+            img.classList.remove('hammering');
+            return alert("이미 최고 단계입니다!");
         }
+
+        const nextGold = user.gold - s.upgrade_cost;
+        await supabaseClient.from('profiles').update({ gold: nextGold, current_sword_lvl: nextLvl }).eq('id', user.id);
+
+        setTimeout(() => {
+            img.classList.remove('hammering');
+            user.gold = nextGold;
+            user.current_sword_lvl = nextLvl;
+            document.getElementById('npc-msg').innerText = success ? "성공이라네! 대단하구만!" : "실패했군... 다시 도전해보게.";
+            updateUI();
+            loadRanking();
+        }, 800);
     }
 
-    async function redeem() {
-        const code = prompt("코드를 입력하세요.");
-        const { data } = await supabaseClient.from('reward_codes').select('*').eq('code', code).single();
-        if(!data) return alert("틀린 코드입니다.");
-        await supabaseClient.from('profiles').update({ gold: user.gold + data.reward_gold }).eq('id', user.id);
-        user.gold += data.reward_gold;
-        showMoney(data.reward_gold, 'plus');
-        updateUI();
-    }
     init();
 </script>
 </body>
