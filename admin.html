@@ -2,39 +2,44 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>관리자 - codetbase</title>
+    <title>codetbase 관리자 - 파일 업로드형</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding-top: 90px; }
+        body { font-family: 'Pretendard', sans-serif; background: #f0f2f5; margin: 0; padding-top: 90px; }
         .header { position: fixed; top: 0; width: 100%; background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-sizing: border-box; }
-        .save-btn { background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .container { max-width: 1000px; margin: auto; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
-        label { font-size: 11px; color: #888; display: block; }
-        .section-title { margin: 40px 0 20px; padding-bottom: 10px; border-bottom: 2px solid #ccc; }
+        .save-btn { background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #1e8449; }
+        .save-btn:active { transform: translateY(2px); box-shadow: none; }
+        .container { max-width: 1100px; margin: auto; padding: 20px; }
+        /* 디자인 대폭 수정 */
+        .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; display: grid; grid-template-columns: 70px 1.5fr 1fr 1fr 2fr 50px; gap: 15px; align-items: center; border: 1px solid #e0e0e0; }
+        .img-preview-box { width: 60px; height: 60px; background: #f9f9f9; border: 1px dashed #ccc; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .img-preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 14px; }
+        label { font-size: 11px; color: #7f8c8d; font-weight: bold; margin-bottom: 5px; display: block; }
+        .section-title { margin-top: 40px; border-left: 5px solid #2c3e50; padding-left: 15px; color: #2c3e50; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h2 style="margin:0;">codetbase 관리 시스템</h2>
-        <button class="save-btn" onclick="saveAll()">모든 설정 일괄 저장</button>
+        <h2 style="margin:0;">codetbase Admin</h2>
+        <button class="save-btn" onclick="saveAll()">변경사항 한꺼번에 저장</button>
     </div>
 
     <div class="container">
-        <h3 class="section-title">⚔️ 강화 레벨 설정</h3>
+        <h3 class="section-title">⚔️ 강화 레벨 & 이미지 업로드 관리</h3>
         <div id="sword-list"></div>
-        <button onclick="addSword()" style="width:100%; padding:15px; cursor:pointer;">+ 레벨 추가</button>
+        <button onclick="addSword()" style="width:100%; padding:15px; cursor:pointer; background:#fff; border:2px dashed #ccc; border-radius:15px; font-weight:bold; color:#7f8c8d;">+ 새로운 강화 레벨 추가</button>
 
-        <h3 class="section-title">🎁 보상 코드 설정</h3>
+        <h3 class="section-title">🎁 보상 코드 시스템</h3>
         <div id="code-list"></div>
-        <button onclick="addCode()" style="width:100%; padding:15px; cursor:pointer; background:#e67e22; color:white; border:none;">+ 보상 코드 추가</button>
+        <button onclick="addCode()" style="width:100%; padding:15px; cursor:pointer; background:#e67e22; color:white; border:none; border-radius:15px; font-weight:bold;">+ 보상 코드 추가</button>
     </div>
 
 <script>
     const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
     let swordData = [], rewardCodes = [];
 
     async function load() {
@@ -44,43 +49,66 @@
         render();
     }
 
+    // 파일 업로드 (버킷 이름을 codet-img로 수정함)
+    async function uploadFile(file, index) {
+        if (!file) return;
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${index}.${fileExt}`;
+        const filePath = `items/${fileName}`;
+
+        // codet-img 버킷 사용
+        const { error } = await supabaseClient.storage.from('codet-img').upload(filePath, file);
+        if (error) { alert("업로드 실패: " + error.message); return; }
+
+        const { data: { publicUrl } } = supabaseClient.storage.from('codet-img').getPublicUrl(filePath);
+        swordData[index].image_url = publicUrl;
+        render(); 
+    }
+
     function render() {
         const sList = document.getElementById('sword-list');
         sList.innerHTML = '';
         swordData.forEach((s, i) => {
-            const div = document.createElement('div'); div.className = 'card';
+            const div = document.createElement('div');
+            div.className = 'card';
             div.innerHTML = `
-                <div><label>LV</label><input type="number" value="${s.level}" style="width:50px" onchange="swordData[${i}].level=Number(this.value)"></div>
-                <div style="flex:1"><label>이름</label><input type="text" value="${s.name}" style="width:100%" onchange="swordData[${i}].name=this.value"></div>
-                <div><label>비용</label><input type="number" value="${s.upgrade_cost}" style="width:90px" onchange="swordData[${i}].upgrade_cost=Number(this.value)"></div>
-                <div><label>확률</label><input type="number" step="0.1" value="${s.success_rate}" style="width:60px" onchange="swordData[${i}].success_rate=Number(this.value)"></div>
-                <div style="flex:1"><label>이미지URL</label><input type="text" value="${s.image_url||''}" style="width:100%" onchange="swordData[${i}].image_url=this.value"></div>
-                <button onclick="swordData.splice(${i},1); render()" style="color:red; border:none; background:none; cursor:pointer;">X</button>`;
+                <div><label>LV</label><input type="number" value="${s.level}" onchange="swordData[${i}].level=Number(this.value)"></div>
+                <div><label>이름</label><input type="text" value="${s.name}" onchange="swordData[${i}].name=this.value"></div>
+                <div><label>강화비용</label><input type="number" value="${s.upgrade_cost}" onchange="swordData[${i}].upgrade_cost=Number(this.value)"></div>
+                <div><label>성공확률(0~1)</label><input type="number" step="0.01" value="${s.success_rate}" onchange="swordData[${i}].success_rate=Number(this.value)"></div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <div class="img-preview-box"><img src="${s.image_url || ''}"></div>
+                    <div style="flex:1"><label>이미지 선택</label><input type="file" style="font-size:11px" onchange="uploadFile(this.files[0], ${i})"></div>
+                </div>
+                <button onclick="swordData.splice(${i},1); render()" style="color:#e74c3c; border:none; background:none; cursor:pointer; font-weight:bold;">삭제</button>
+            `;
             sList.appendChild(div);
         });
 
         const cList = document.getElementById('code-list');
         cList.innerHTML = '';
         rewardCodes.forEach((c, i) => {
-            const div = document.createElement('div'); div.className = 'card';
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.style.gridTemplateColumns = "1fr 1fr 50px";
             div.innerHTML = `
-                <div style="flex:1"><label>코드명</label><input type="text" value="${c.code}" style="width:100%" onchange="rewardCodes[${i}].code=this.value"></div>
-                <div style="flex:1"><label>지급 골드</label><input type="number" value="${c.reward_gold}" style="width:100%" onchange="rewardCodes[${i}].reward_gold=Number(this.value)"></div>
-                <button onclick="rewardCodes.splice(${i},1); render()" style="color:red; border:none; background:none; cursor:pointer;">X</button>`;
+                <div><label>코드명</label><input type="text" value="${c.code}" onchange="rewardCodes[${i}].code=this.value"></div>
+                <div><label>지급 골드</label><input type="number" value="${c.reward_gold}" onchange="rewardCodes[${i}].reward_gold=Number(this.value)"></div>
+                <button onclick="rewardCodes.splice(${i},1); render()" style="color:#e74c3c; border:none; background:none; cursor:pointer; font-weight:bold;">삭제</button>
+            `;
             cList.appendChild(div);
         });
     }
 
-    function addSword() { swordData.push({ level: swordData.length+1, name: '', upgrade_cost: 1000, success_rate: 0.5, image_url: '', description: '새 검' }); render(); }
-    function addCode() { rewardCodes.push({ code: 'NEWCODE', reward_gold: 10000 }); render(); }
+    function addSword() { swordData.push({ level: swordData.length+1, name: '', upgrade_cost: 1000, success_rate: 0.5, image_url: '' }); render(); }
+    function addCode() { rewardCodes.push({ code: 'CODE', reward_gold: 10000 }); render(); }
 
     async function saveAll() {
-        // 일괄 삭제 후 재삽입 로직
         await supabaseClient.from('sword_data').delete().neq('level', -1);
         await supabaseClient.from('sword_data').insert(swordData);
         await supabaseClient.from('reward_codes').delete().neq('reward_gold', -1);
-        await supabaseClient.from('reward_codes').insert(rewardCodes.map(c => ({ code: c.code, reward_gold: c.reward_gold })));
-        alert("모든 설정이 저장되었습니다!");
+        if(rewardCodes.length > 0) await supabaseClient.from('reward_codes').insert(rewardCodes.map(c => ({ code: c.code, reward_gold: c.reward_gold })));
+        alert("codetbase의 모든 데이터가 저장되었습니다!");
     }
     load();
 </script>
