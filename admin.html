@@ -2,76 +2,134 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>관리자 페이지 - 검 강화 게임</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>codetbase - 관리자 페이지</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        input { width: 80px; }
-        .save-btn { background: #28a745; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+        body { font-family: 'Pretendard', sans-serif; background: #f4f7f6; margin: 0; padding-top: 80px; }
+        
+        /* 상단 고정 바 */
+        .admin-header { 
+            position: fixed; top: 0; left: 0; right: 0; height: 70px;
+            background: #2c3e50; color: white; display: flex; 
+            align-items: center; justify-content: space-between; 
+            padding: 0 30px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .save-btn { 
+            background: #27ae60; color: white; border: none; 
+            padding: 12px 25px; border-radius: 8px; font-weight: bold; 
+            cursor: pointer; font-size: 16px; transition: 0.3s;
+        }
+        .save-btn:hover { background: #2ecc71; }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        
+        /* 레벨 아이템 카드 */
+        .level-card { 
+            background: white; border-radius: 15px; padding: 20px; 
+            margin-bottom: 20px; display: grid; grid-template-columns: 80px 1fr 1fr 1fr 200px 50px;
+            gap: 15px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 100%; box-sizing: border-box; }
+        label { font-size: 12px; color: #7f8c8d; display: block; margin-bottom: 5px; }
+
+        .add-lvl-btn {
+            width: 100%; padding: 15px; background: #34495e; color: white;
+            border: 2px dashed #bdc3c7; border-radius: 15px; cursor: pointer;
+            font-size: 18px; font-weight: bold; margin-top: 20px;
+        }
+
+        .delete-btn { color: #e74c3c; cursor: pointer; font-weight: bold; border: none; background: none; }
     </style>
 </head>
 <body>
-    <h1>검 강화 데이터 관리 (어드민)</h1>
-    <p>여기서 수치를 수정하면 게임에 즉시 반영됩니다.</p>
-    
-    <table>
-        <thead>
-            <tr>
-                <th>레벨</th>
-                <th>이름</th>
-                <th>확률 (0~1)</th>
-                <th>강화비용</th>
-                <th>판매가</th>
-                <th>설명</th>
-                <th>저장</th>
-            </tr>
-        </thead>
-        <tbody id="sword-list">
-            </tbody>
-    </table>
 
-    <script>
-        const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
-        const supabaseAdmin = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<div class="admin-header">
+    <h2 style="margin:0;">codetbase 관리자</h2>
+    <div>
+        <button class="save-btn" onclick="saveAll()">모든 설정 저장하기</button>
+    </div>
+</div>
 
-        async function loadSwords() {
-            const { data } = await supabaseAdmin.from('sword_data').select('*').order('level', { ascending: true });
-            const list = document.getElementById('sword-list');
-            list.innerHTML = "";
-            
-            data.forEach(s => {
-                list.innerHTML += `
-                    <tr>
-                        <td>${s.level}</td>
-                        <td><input id="name-${s.level}" value="${s.name}"></td>
-                        <td><input id="rate-${s.level}" type="number" step="0.1" value="${s.success_rate}"></td>
-                        <td><input id="cost-${s.level}" type="number" value="${s.upgrade_cost}"></td>
-                        <td><input id="sell-${s.level}" type="number" value="${s.sell_price}"></td>
-                        <td><input id="desc-${s.level}" value="${s.description}" style="width:200px;"></td>
-                        <td><button class="save-btn" onclick="saveSword(${s.level})">저장</button></td>
-                    </tr>
-                `;
-            });
+<div class="container">
+    <div id="level-list">
+        </div>
+    <button class="add-lvl-btn" onclick="addNewLevel()">+ 새로운 강화 단계 추가</button>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let swordData = [];
+
+    async function fetchLevels() {
+        const { data, error } = await supabaseClient.from('sword_data').select('*').order('level', { ascending: true });
+        if (data) {
+            swordData = data;
+            renderLevels();
         }
+    }
 
-        async function saveSword(lvl) {
-            const updateData = {
-                name: document.getElementById(`name-${lvl}`).value,
-                success_rate: parseFloat(document.getElementById(`rate-${lvl}`).value),
-                upgrade_cost: parseInt(document.getElementById(`cost-${lvl}`).value),
-                sell_price: parseInt(document.getElementById(`sell-${lvl}`).value),
-                description: document.getElementById(`desc-${lvl}`).value
-            };
+    function renderLevels() {
+        const list = document.getElementById('level-list');
+        list.innerHTML = '';
+        swordData.forEach((s, index) => {
+            const card = document.createElement('div');
+            card.className = 'level-card';
+            card.innerHTML = `
+                <div><label>레벨</label><input type="number" value="${s.level}" onchange="updateData(${index}, 'level', this.value)"></div>
+                <div><label>이름</label><input type="text" value="${s.name}" onchange="updateData(${index}, 'name', this.value)"></div>
+                <div><label>강화비용</label><input type="number" value="${s.upgrade_cost}" onchange="updateData(${index}, 'upgrade_cost', this.value)"></div>
+                <div><label>성공확률(0~1)</label><input type="number" step="0.01" value="${s.success_rate}" onchange="updateData(${index}, 'success_rate', this.value)"></div>
+                <div><label>이미지 URL</label><input type="text" value="${s.image_url || ''}" placeholder="http://..." onchange="updateData(${index}, 'image_url', this.value)"></div>
+                <button class="delete-btn" onclick="deleteLevel(${index})">X</button>
+            `;
+            list.appendChild(card);
+        });
+    }
 
-            const { error } = await supabaseAdmin.from('sword_data').update(updateData).eq('level', lvl);
-            if (error) alert("저장 실패!");
-            else alert(`${lvl}레벨 검 정보가 수정되었습니다!`);
+    function updateData(index, field, value) {
+        swordData[index][field] = (field === 'name' || field === 'image_url') ? value : parseFloat(value);
+    }
+
+    function addNewLevel() {
+        const nextLvl = swordData.length > 0 ? swordData[swordData.length - 1].level + 1 : 1;
+        swordData.push({
+            level: nextLvl,
+            name: "새로운 검",
+            upgrade_cost: 1000,
+            success_rate: 0.5,
+            sell_price: 500,
+            image_url: ""
+        });
+        renderLevels();
+    }
+
+    function deleteLevel(index) {
+        if(confirm("이 레벨을 삭제하시겠습니까?")) {
+            swordData.splice(index, 1);
+            renderLevels();
         }
+    }
 
-        loadSwords();
-    </script>
+    async function saveAll() {
+        // 1. 기존 데이터 전체 삭제 (일괄 업데이트를 위해)
+        const { error: delError } = await supabaseClient.from('sword_data').delete().neq('level', -1);
+        
+        if (delError) return alert("저장 중 오류 발생: " + delError.message);
+
+        // 2. 새로운 데이터 일괄 삽입
+        const { error: insError } = await supabaseClient.from('sword_data').insert(swordData);
+
+        if (insError) alert("삽입 중 오류 발생: " + insError.message);
+        else alert("성공적으로 저장되었습니다! 이제 게임에 즉시 반영됩니다.");
+    }
+
+    fetchLevels();
+</script>
 </body>
 </html>
