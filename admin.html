@@ -6,6 +6,7 @@
     <title>검 강화 게임 Admin - 통합 관리</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* 기존 스타일 유지 */
         body { font-family: 'Pretendard', sans-serif; background: #f0f2f5; margin: 0; padding-top: 80px; display: none; }
         .header { position: fixed; top: 0; width: 100%; background: #2c3e50; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-sizing: border-box; }
         .save-btn { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -47,8 +48,17 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    if(prompt("관리자 비밀번호?") === "1234") { document.body.style.display = "block"; load(); }
-    else { window.location.href="index.html"; }
+    // 비밀번호 체크 로직 수정 (맞을 때까지 반복)
+    function checkPassword() {
+        let pw = prompt("관리자 비밀번호를 입력하세요.");
+        while (pw !== "1234") {
+            pw = prompt("비밀번호가 틀렸습니다. 다시 입력해주세요.");
+        }
+        document.body.style.display = "block";
+        load();
+    }
+    
+    checkPassword();
 
     let swordData = [], userData = [], rewardCodes = [];
 
