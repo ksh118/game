@@ -1,1 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - codetbase</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background-color: #f0f0f0; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .auth-card { width: 90%; max-width: 350px; background: white; padding: 40px; border-radius: 30px; border: 4px solid #000; text-align: center; }
+        h1 { margin-bottom: 10px; font-size: 32px; }
+        p { color: #888; font-size: 14px; margin-bottom: 20px; }
+        input { width: 100%; padding: 15px; margin: 8px 0; border: 2px solid #ddd; border-radius: 15px; box-sizing: border-box; font-size: 16px; }
+        input:focus { border-color: #000; outline: none; }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 15px; border-radius: 15px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; color: white; transition: 0.2s; }
+        .login-btn { background: #000; }
+        .signup-btn { background: #666; }
+        button:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
 
+<div class="auth-card">
+    <h1>codetbase</h1>
+    <p>회원가입 시에만 닉네임을 입력하세요</p>
+    <input type="email" id="email" placeholder="이메일">
+    <input type="password" id="password" placeholder="비밀번호">
+    <input type="text" id="nickname" placeholder="닉네임 (가입 시 필수)">
+    
+    <div class="btn-group">
+        <button class="signup-btn" onclick="handleSignUp()">회원가입</button>
+        <button class="login-btn" onclick="handleLogin()">로그인</button>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 회원가입
+    async function handleSignUp() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const nick = document.getElementById('nickname').value;
+
+        if (!nick) return alert("가입 시 사용할 닉네임을 입력해주세요!");
+
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) return alert("가입 실패: " + error.message);
+        
+        // 프로필 생성
+        const { error: pError } = await supabaseClient.from('profiles').insert([
+            { id: data.user.id, nickname: nick, gold: 5000, current_sword_lvl: 1 }
+        ]);
+        
+        if (pError) alert("프로필 생성 오류: " + pError.message);
+        else alert("가입 성공! 이제 로그인을 해주세요.");
+    }
+
+    // 로그인
+    async function handleLogin() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        
+        if (error) alert("로그인 실패: 이메일이나 비밀번호를 확인하세요.");
+        else {
+            // 로그인 성공 시 index.html로 이동
+            window.location.href = "index.html";
+        }
+    }
+
+    // 이미 로그인된 경우 자동 이동
+    async function checkSession() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) window.location.href = "index.html";
+    }
+    checkSession();
+</script>
+</body>
+</html>
