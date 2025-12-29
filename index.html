@@ -3,54 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>로그인 - codetbase</title>
+    <title>codetbase - 크리스마스 강화</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background-color: #f0f0f0; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .auth-card { width: 90%; max-width: 350px; background: white; padding: 40px; border-radius: 30px; border: 4px solid #000; text-align: center; }
-        h1 { margin: 0 0 10px; font-size: 32px; }
-        .desc { color: #888; font-size: 14px; margin-bottom: 20px; }
-        input { width: 100%; padding: 15px; margin: 8px 0; border: 2px solid #ddd; border-radius: 15px; box-sizing: border-box; font-size: 16px; }
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        button { flex: 1; padding: 15px; border-radius: 15px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; color: white; }
-        .login-btn { background: #000; }
-        .signup-btn { background: #666; }
+        :root { --main-red: #c0392b; --main-green: #27ae60; --dark-gray: #2c3e50; }
+        body { background-color: #e6e9ed; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; margin: 0; padding: 20px 0; }
+        .game-container { width: 100%; max-width: 420px; background: white; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; position: relative; }
+
+        /* 상단 바 */
+        .header-bar { background: var(--dark-gray); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .nickname { font-weight: bold; font-size: 16px; color: #f1c40f; }
+        .gold-display { font-size: 18px; font-weight: bold; position: relative; }
+
+        /* 대장장이 말풍선 (이미지 모티브) */
+        .npc-talk { background: #f8f9fa; border: 1px solid #ddd; border-radius: 15px; margin: 15px; padding: 15px; text-align: left; position: relative; }
+        .npc-name { font-weight: bold; color: var(--main-red); margin-bottom: 5px; display: block; }
+        .npc-msg { font-size: 14px; line-height: 1.5; color: #333; }
+
+        /* 이미지 박스 */
+        .image-box { background: #eee; height: 220px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin: 0 15px; border-radius: 20px; }
+        .sword-img { width: 200px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2)); transition: transform 0.1s; }
+        .shake { animation: shake 0.1s infinite; }
+        @keyframes shake { 0% {transform: rotate(-3deg);} 50% {transform: rotate(3deg);} 100% {transform: rotate(-3deg);} }
+
+        /* 골드 변동 효과 (2.5초 유지) */
+        .money-effect { 
+            position: absolute; right: 20px; top: 50px; font-weight: bold; font-size: 24px; pointer-events: none; 
+            animation: floatUp 2.5s ease-out forwards; z-index: 100;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+
+        /* 상세 정보 */
+        .item-info { padding: 15px; text-align: left; }
+        .item-lvl-name { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .item-desc { color: #666; font-size: 14px; margin-bottom: 10px; }
+        .cost-info { background: #f1f2f6; border-radius: 10px; padding: 10px; font-size: 13px; color: #555; }
+
+        /* 버튼 */
+        .btn-group { display: flex; gap: 10px; padding: 15px; }
+        button { flex: 1; padding: 16px; border-radius: 15px; border: none; font-weight: bold; font-size: 18px; cursor: pointer; transition: 0.2s; }
+        .sell-btn { background: #ecf0f1; color: #7f8c8d; }
+        .upgrade-btn { background: var(--dark-gray); color: white; }
+        button:active { transform: scale(0.95); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .flash { position: absolute; inset:0; background: white; animation: flashAnim 0.4s; pointer-events: none; opacity: 0; }
+        @keyframes flashAnim { 0% {opacity: 1;} 100% {opacity: 0;} }
     </style>
 </head>
 <body>
-<div class="auth-card">
-    <h1>codetbase</h1>
-    <p class="desc">회원가입 시에만 닉네임을 입력하세요</p>
-    <input type="email" id="email" placeholder="이메일">
-    <input type="password" id="password" placeholder="비밀번호">
-    <input type="text" id="nickname" placeholder="닉네임 (가입 시 필수)">
+
+<div class="game-container">
+    <div class="header-bar">
+        <span class="nickname" id="nick-display">로딩 중...</span>
+        <div class="gold-display" id="gold-anchor">
+            <span id="gold-display">0G</span>
+        </div>
+    </div>
+
+    <div class="npc-talk">
+        <span class="npc-name" id="npc-name">대장장이 루돌프</span>
+        <div class="npc-msg" id="npc-msg">"어서오게! 오늘은 무엇을 강화하러 왔나?"</div>
+    </div>
+
+    <div class="image-box" id="sword-box">
+        <div id="flash-layer"></div>
+        <img id="sword-img" src="https://cdn-icons-png.flaticon.com/512/3233/3233514.png" class="sword-img">
+    </div>
+
+    <div class="item-info">
+        <div class="item-lvl-name" id="sw-name">아이템 이름</div>
+        <div class="item-desc" id="sw-desc">아이템 설명이 들어갑니다.</div>
+        <div class="cost-info">
+            💰 강화 비용: <span id="upgrade-cost">0</span>G<br>
+            📈 성공 확률: <span id="success-rate">0</span>%
+        </div>
+    </div>
+
     <div class="btn-group">
-        <button class="signup-btn" onclick="handleSignUp()">회원가입</button>
-        <button class="login-btn" onclick="handleLogin()">로그인</button>
+        <button class="sell-btn" id="btn-sell" onclick="handleSell()">판매</button>
+        <button class="upgrade-btn" id="btn-upgrade" onclick="handleUpgrade()">강화하기</button>
     </div>
 </div>
+
 <script>
     const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function handleSignUp() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const nick = document.getElementById('nickname').value;
-        if (!nick) return alert("닉네임을 입력해주세요!");
-        const { data, error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) return alert(error.message);
-        await supabaseClient.from('profiles').insert([{ id: data.user.id, nickname: nick, gold: 5000, current_sword_lvl: 1 }]);
-        alert("가입 성공! 로그인을 눌러주세요.");
+    let user = null, swords = {};
+    const successMsgs = ["고작 +1이 되었다고 좋아하느냐?", "호오, 제법 날카로워졌군!", "이 검에 겨울밤의 냉기가 서렸다."];
+    const failMsgs = ["아깝군, 거의 다듬어졌는데.", "재료 탓이야, 재료 탓.", "망치질 한 번이 아쉽구만."];
+
+    async function init() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.href = "login.html"; return; }
+        
+        const { data: sData } = await supabaseClient.from('sword_data').select('*');
+        sData.forEach(s => swords[s.level] = s);
+
+        const { data: pData } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+        user = pData;
+        updateUI();
     }
-    async function handleLogin() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) alert("정보를 확인하세요.");
-        else window.location.href = "index.html";
+
+    function updateUI() {
+        const s = swords[user.current_sword_lvl];
+        document.getElementById('nick-display').innerText = `ID: ${user.nickname}`;
+        document.getElementById('gold-display').innerText = `${user.gold.toLocaleString()}G`;
+        document.getElementById('sw-name').innerText = `[+${user.current_sword_lvl - 1}] ${s.name}`;
+        document.getElementById('sw-desc').innerText = s.description;
+        document.getElementById('upgrade-cost').innerText = s.upgrade_cost.toLocaleString();
+        document.getElementById('success-rate').innerText = Math.floor(s.success_rate * 100);
+        document.getElementById('btn-sell').disabled = (user.current_sword_lvl === 1);
     }
+
+    function animateMoney(amount, type) {
+        const anchor = document.getElementById('gold-anchor');
+        const effect = document.createElement('div');
+        effect.className = 'money-effect';
+        effect.style.color = (type === 'minus') ? '#e74c3c' : '#3498db';
+        effect.innerText = (type === 'minus' ? '-' : '+') + amount.toLocaleString() + 'G';
+        anchor.appendChild(effect);
+        setTimeout(() => effect.remove(), 2500);
+    }
+
+    async function handleUpgrade() {
+        const s = swords[user.current_sword_lvl];
+        if (user.gold < s.upgrade_cost) {
+            document.getElementById('npc-name').innerText = "대장장이 루돌프";
+            document.getElementById('npc-msg').innerText = "골드가 부족해. 골드를 더 모으고 오시게나.";
+            return;
+        }
+
+        const img = document.getElementById('sword-img');
+        img.classList.add('shake');
+        animateMoney(s.upgrade_cost, 'minus');
+
+        const success = Math.random() < s.success_rate;
+        const nextLvl = success ? user.current_sword_lvl + 1 : Math.max(1, user.current_sword_lvl - 1);
+        const nextGold = user.gold - s.upgrade_cost;
+
+        await supabaseClient.from('profiles').update({ gold: nextGold, current_sword_lvl: nextLvl }).eq('id', user.id);
+
+        setTimeout(() => {
+            img.classList.remove('shake');
+            user.gold = nextGold; user.current_sword_lvl = nextLvl;
+            
+            if (success) {
+                document.getElementById('flash-layer').classList.add('flash');
+                setTimeout(() => document.getElementById('flash-layer').classList.remove('flash'), 400);
+                document.getElementById('npc-msg').innerText = `"${successMsgs[Math.floor(Math.random()*successMsgs.length)]}"`;
+            } else {
+                document.getElementById('npc-msg').innerText = `"${failMsgs[Math.floor(Math.random()*failMsgs.length)]}"`;
+            }
+
+            updateUI();
+        }, 600);
+    }
+
+    async function handleSell() {
+        const s = swords[user.current_sword_lvl];
+        const earn = s.sell_price;
+        const nextGold = user.gold + earn;
+        await supabaseClient.from('profiles').update({ gold: nextGold, current_sword_lvl: 1 }).eq('id', user.id);
+        
+        animateMoney(earn, 'plus');
+        user.gold = nextGold; user.current_sword_lvl = 1;
+        
+        document.getElementById('npc-name').innerText = "눈사람 감정사";
+        document.getElementById('npc-msg').innerText = `"훌륭한 검이군! ${earn.toLocaleString()}G에 매입하겠네."`;
+        updateUI();
+    }
+
+    init();
 </script>
 </body>
 </html>
