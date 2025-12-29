@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>관리자 페이지 - 검 강화 게임</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        input { width: 80px; }
+        .save-btn { background: #28a745; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>검 강화 데이터 관리 (어드민)</h1>
+    <p>여기서 수치를 수정하면 게임에 즉시 반영됩니다.</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>레벨</th>
+                <th>이름</th>
+                <th>확률 (0~1)</th>
+                <th>강화비용</th>
+                <th>판매가</th>
+                <th>설명</th>
+                <th>저장</th>
+            </tr>
+        </thead>
+        <tbody id="sword-list">
+            </tbody>
+    </table>
+
+    <script>
+        const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
+        const supabaseAdmin = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadSwords() {
+            const { data } = await supabaseAdmin.from('sword_data').select('*').order('level', { ascending: true });
+            const list = document.getElementById('sword-list');
+            list.innerHTML = "";
+            
+            data.forEach(s => {
+                list.innerHTML += `
+                    <tr>
+                        <td>${s.level}</td>
+                        <td><input id="name-${s.level}" value="${s.name}"></td>
+                        <td><input id="rate-${s.level}" type="number" step="0.1" value="${s.success_rate}"></td>
+                        <td><input id="cost-${s.level}" type="number" value="${s.upgrade_cost}"></td>
+                        <td><input id="sell-${s.level}" type="number" value="${s.sell_price}"></td>
+                        <td><input id="desc-${s.level}" value="${s.description}" style="width:200px;"></td>
+                        <td><button class="save-btn" onclick="saveSword(${s.level})">저장</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function saveSword(lvl) {
+            const updateData = {
+                name: document.getElementById(`name-${lvl}`).value,
+                success_rate: parseFloat(document.getElementById(`rate-${lvl}`).value),
+                upgrade_cost: parseInt(document.getElementById(`cost-${lvl}`).value),
+                sell_price: parseInt(document.getElementById(`sell-${lvl}`).value),
+                description: document.getElementById(`desc-${lvl}`).value
+            };
+
+            const { error } = await supabaseAdmin.from('sword_data').update(updateData).eq('level', lvl);
+            if (error) alert("저장 실패!");
+            else alert(`${lvl}레벨 검 정보가 수정되었습니다!`);
+        }
+
+        loadSwords();
+    </script>
+</body>
+</html>
