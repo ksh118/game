@@ -16,7 +16,6 @@
         .gold-wrap { display: flex; align-items: center; gap: 8px; position: relative; }
         .code-btn { background: #f1c40f; border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
-        /* 골드 변동 애니메이션 (3초) */
         .money-float { position: absolute; right: 40px; top: -10px; font-weight: 900; font-size: 22px; animation: floatUp 3s forwards; pointer-events: none; z-index: 100; }
         @keyframes floatUp { 0% { opacity: 0; transform: translateY(0); } 10% { opacity: 1; } 100% { opacity: 0; transform: translateY(-80px); } }
 
@@ -99,7 +98,10 @@
         const item = swords[user.current_sword_lvl] || swords[1];
         document.getElementById('u-nick').innerText = user.nickname + "님";
         document.getElementById('u-gold').innerText = user.gold.toLocaleString() + "G";
-        document.getElementById('s-name').innerText = `[+${item.level-1}] ${item.name}`;
+        
+        // 수정 포인트: item.level-1 대신 item.level을 사용하여 +1부터 시작하게 함
+        document.getElementById('s-name').innerText = `[+${item.level}] ${item.name}`;
+        
         document.getElementById('s-desc').innerText = item.description || "설명 없음";
         document.getElementById('s-info').innerText = `강화: ${item.upgrade_cost.toLocaleString()}G | 판매: ${(item.sell_price || 0).toLocaleString()}G | 확률: ${item.success_rate*100}%`;
         document.getElementById('s-img').src = item.image_url;
@@ -144,7 +146,6 @@
                 return alert("최고 레벨!"); 
             }
         } else {
-            // 실패 시 1레벨 하락 (최소 1레벨 유지)
             nextLvl = Math.max(1, user.current_sword_lvl - 1);
         }
 
@@ -163,10 +164,7 @@
         const el = document.getElementById('full-effect');
         el.style.display = 'flex';
         el.style.backgroundColor = success ? 'rgba(52, 152, 219, 0.8)' : 'rgba(231, 76, 60, 0.8)';
-        
-        // 실패 시 문구 변경: 강화 실패! -1LV
         el.innerText = success ? "강화 성공!!" : "강화 실패!\n-1LV";
-        
         setTimeout(() => { el.style.display = 'none'; }, 800); 
     }
 
