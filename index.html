@@ -6,13 +6,41 @@
     <title>검 강화 게임 - codetbase</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background-color: #f0f0f0; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; margin: 0; padding-top: 20px; }
-        .game-container { width: 100%; max-width: 400px; padding: 20px; text-align: center; }
-        .header-bar { border: 4px solid #000; border-radius: 50px; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; background: #fff; font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+        body { background-color: #f0f0f0; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; margin: 0; padding-top: 20px; overflow-x: hidden; }
+        .game-container { width: 100%; max-width: 400px; padding: 20px; text-align: center; position: relative; }
+        
+        /* 상단 바 */
+        .header-bar { border: 4px solid #000; border-radius: 50px; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; background: #fff; font-size: 18px; font-weight: bold; margin-bottom: 15px; position: relative; }
         .rank-btn { background: #000; color: #fff; border-radius: 20px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+        
+        /* 돈 빠져나가는 효과 애니메이션 */
+        .money-effect { position: absolute; right: 20px; bottom: 0; color: #ff0000; font-weight: bold; font-size: 20px; pointer-events: none; animation: floatUp 1s ease-out forwards; opacity: 0; }
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+
+        /* 검 박스 및 강화 애니메이션 */
+        .image-box { background: #bbb; border-radius: 20px; height: 250px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; position: relative; overflow: hidden; }
+        .sword-img { width: 180px; transition: transform 0.1s; }
+        
+        /* 강화 시 흔들림 효과 */
+        .shake { animation: shakeAnim 0.3s linear infinite; }
+        @keyframes shakeAnim {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(-5deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* 반짝임 효과 (성공 시) */
+        .glitter { position: absolute; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.5); pointer-events: none; animation: flash 0.5s ease-out; }
+        @keyframes flash {
+            0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; }
+        }
+
         .status-box { background: #bbb; border-radius: 20px; padding: 20px; margin-bottom: 15px; }
-        .image-box { background: #bbb; border-radius: 20px; height: 250px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }
-        .sword-img { width: 180px; }
         .info-box { background: #bbb; border-radius: 20px; padding: 20px; margin-bottom: 15px; }
         .btn-group { display: flex; gap: 10px; }
         button { flex: 1; padding: 15px; border-radius: 20px; border: none; font-weight: bold; font-size: 20px; cursor: pointer; color: #fff; }
@@ -24,26 +52,31 @@
 <body>
 
 <div class="game-container">
-    <div class="header-bar">
+    <div class="header-bar" id="money-anchor">
         <span id="nick-display">로딩 중...</span>
         <span class="rank-btn" onclick="showRank()">순위</span>
         <span id="gold-display">골드:0G</span>
-    </div>
-    <div id="log-display" style="font-weight:bold; margin-bottom:10px; height:20px; font-size:14px;"></div>
+        </div>
+
+    <div id="log-display" style="font-weight:bold; margin-bottom:10px; height:20px; font-size:14px; color: #444;"></div>
+
     <div class="status-box">
         <h2 id="res-title" style="margin:0;">강화 대기 중</h2>
         <p id="res-lvl" style="margin:5px 0 0; font-weight:bold;">-</p>
     </div>
-    <div class="image-box">
+
+    <div class="image-box" id="sword-container">
         <img id="sword-img" src="https://cdn-icons-png.flaticon.com/512/3233/3233514.png" class="sword-img">
     </div>
+
     <div class="info-box">
         <h3 id="sw-name" style="margin:0;">정보 로딩...</h3>
         <p id="sw-desc" style="margin:10px 0 0; font-size:14px;">-</p>
     </div>
+
     <div class="btn-group">
         <button class="sell-btn" id="btn-sell" onclick="handleSell()">판매</button>
-        <button class="upgrade-btn" onclick="handleUpgrade()">강화</button>
+        <button class="upgrade-btn" id="btn-upgrade" onclick="handleUpgrade()">강화</button>
     </div>
     <button class="logout-btn" onclick="handleLogout()">로그아웃</button>
 </div>
@@ -51,32 +84,22 @@
 <script>
     const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-        auth: { persistSession: true }
-    });
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true } });
 
     let userData = null;
     let swordList = {};
 
     async function init() {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) {
-            window.location.href = "login.html";
-            return;
-        }
-
+        if (!session) { window.location.href = "login.html"; return; }
         const { data: sData } = await supabaseClient.from('sword_data').select('*');
         if (sData) sData.forEach(s => swordList[s.level] = s);
-
         await loadProfile(session.user.id);
     }
 
     async function loadProfile(uid) {
         const { data } = await supabaseClient.from('profiles').select('*').eq('id', uid).single();
-        if (data) {
-            userData = data;
-            updateDisplay();
-        }
+        if (data) { userData = data; updateDisplay(); }
     }
 
     function updateDisplay() {
@@ -89,20 +112,57 @@
         document.getElementById('btn-sell').disabled = (userData.current_sword_lvl === 1);
     }
 
+    // 돈 빠져나가는 애니메이션 함수
+    function showMoneyEffect(amount) {
+        const anchor = document.getElementById('money-anchor');
+        const effect = document.createElement('div');
+        effect.className = 'money-effect';
+        effect.innerText = `-${amount}G`;
+        anchor.appendChild(effect);
+        setTimeout(() => effect.remove(), 1000);
+    }
+
     async function handleUpgrade() {
+        const btn = document.getElementById('btn-upgrade');
+        const img = document.getElementById('sword-img');
+        const container = document.getElementById('sword-container');
         const currentSword = swordList[userData.current_sword_lvl];
+
         if (userData.gold < currentSword.upgrade_cost) return alert("골드 부족!");
+
+        // 1. 애니메이션 시작
+        btn.disabled = true;
+        img.classList.add('shake');
+        showMoneyEffect(currentSword.upgrade_cost);
 
         const success = Math.random() < currentSword.success_rate;
         const nextLvl = success ? userData.current_sword_lvl + 1 : Math.max(1, userData.current_sword_lvl - 1);
         const nextGold = userData.gold - currentSword.upgrade_cost;
 
+        // DB 업데이트
         const { error } = await supabaseClient.from('profiles').update({ gold: nextGold, current_sword_lvl: nextLvl }).eq('id', userData.id);
-        if (!error) {
-            userData.gold = nextGold; userData.current_sword_lvl = nextLvl;
-            document.getElementById('res-title').innerText = success ? "성공!" : "실패...";
-            updateDisplay();
-        }
+
+        // 0.5초 뒤 결과 반영 (강화 연출 시간)
+        setTimeout(() => {
+            img.classList.remove('shake');
+            btn.disabled = false;
+            
+            if (!error) {
+                userData.gold = nextGold;
+                userData.current_sword_lvl = nextLvl;
+                
+                if (success) {
+                    const flash = document.createElement('div');
+                    flash.className = 'glitter';
+                    container.appendChild(flash);
+                    setTimeout(() => flash.remove(), 500);
+                    document.getElementById('res-title').innerText = "성공! ✨";
+                } else {
+                    document.getElementById('res-title').innerText = "실패... 💀";
+                }
+                updateDisplay();
+            }
+        }, 500);
     }
 
     async function handleSell() {
@@ -111,7 +171,7 @@
         const { error } = await supabaseClient.from('profiles').update({ gold: nextGold, current_sword_lvl: 1 }).eq('id', userData.id);
         if (!error) {
             userData.gold = nextGold; userData.current_sword_lvl = 1;
-            document.getElementById('res-title').innerText = "판매 완료";
+            document.getElementById('res-title').innerText = "판매 완료 💰";
             updateDisplay();
         }
     }
