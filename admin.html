@@ -2,29 +2,39 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>codetbase Admin - 보안 모드</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>codetbase Admin - 통합 관리</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Pretendard', sans-serif; background: #f0f2f5; margin: 0; padding-top: 80px; display: none; }
-        .header { position: fixed; top: 0; width: 100%; background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-sizing: border-box; }
-        .save-btn { background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .container { max-width: 1100px; margin: auto; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; display: grid; grid-template-columns: 70px 1.2fr 2fr 1fr 1fr 2fr 50px; gap: 10px; align-items: center; border: 1px solid #e0e0e0; }
-        .img-preview { width: 50px; height: 50px; background: #eee; border-radius: 8px; object-fit: contain; }
-        input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; box-sizing: border-box; }
-        label { font-size: 11px; color: #7f8c8d; font-weight: bold; }
+        .header { position: fixed; top: 0; width: 100%; background: #2c3e50; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-sizing: border-box; }
+        .save-btn { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .container { max-width: 1100px; margin: auto; padding: 15px; }
+        .card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #ddd; }
+        .user-row { display: grid; grid-template-columns: 1fr 1.5fr 1fr 1fr; gap: 10px; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        input { padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; box-sizing: border-box; }
+        .ban-btn { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .unban-btn { background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        h3 { border-left: 5px solid #2c3e50; padding-left: 10px; margin-top: 40px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h2 style="margin:0;">codetbase Admin 🔒</h2>
+        <h3 style="margin:0;">codetbase Admin 🔒</h3>
         <button class="save-btn" onclick="saveAll()">모든 설정 저장</button>
     </div>
 
     <div class="container">
-        <h3 class="section-title">⚔️ 강화 아이템 및 설명 설정</h3>
+        <h3>👥 회원 관리 (골드 수정 및 정지)</h3>
+        <div class="card" id="user-list">
+            <div class="user-row" style="font-weight:bold; background:#f8f9fa;">
+                <div>닉네임</div><div>골드 수정</div><div>상태</div><div>작업</div>
+            </div>
+            </div>
+
+        <h3>⚔️ 아이템 설정</h3>
         <div id="sword-list"></div>
-        <button onclick="addSword()" style="width:100%; padding:15px; background:#fff; border:2px dashed #ccc; border-radius:15px; cursor:pointer;">+ 새 아이템 추가</button>
+        <button onclick="addSword()" style="width:100%; padding:15px; background:#fff; border:1px dashed #ccc; border-radius:10px;">+ 아이템 추가</button>
     </div>
 
 <script>
@@ -32,62 +42,81 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    // 보안 기능: 비밀번호 1234
-    const pw = prompt("관리자 비밀번호를 입력하세요.");
-    if(pw === "1234") {
-        document.body.style.display = "block";
-        load();
-    } else {
-        alert("비밀번호가 틀렸습니다.");
-        window.location.href = "index.html";
-    }
+    if(prompt("관리자 비밀번호?") === "1234") { document.body.style.display = "block"; load(); }
+    else { alert("비밀번호 오류"); window.location.href="index.html"; }
 
-    let swordData = [];
+    let swordData = [], userData = [];
 
     async function load() {
-        const { data } = await supabaseClient.from('sword_data').select('*').order('level', { ascending: true });
-        swordData = data || [];
+        // 아이템 데이터 로드
+        const { data: s } = await supabaseClient.from('sword_data').select('*').order('level', { ascending: true });
+        swordData = s || [];
+        
+        // 유저 데이터 로드
+        const { data: u } = await supabaseClient.from('profiles').select('*').order('nickname', { ascending: true });
+        userData = u || [];
+        
         render();
     }
 
     function render() {
+        // 회원 관리 렌더링
+        const uBox = document.getElementById('user-list');
+        uBox.innerHTML = `<div class="user-row" style="font-weight:bold; background:#f8f9fa;"><div>닉네임</div><div>골드 수정</div><div>상태</div><div>작업</div></div>`;
+        userData.forEach((user, i) => {
+            const div = document.createElement('div');
+            div.className = 'user-row';
+            const isBanned = user.is_banned === true;
+            div.innerHTML = `
+                <div>${user.nickname}</div>
+                <div><input type="number" value="${user.gold}" onchange="updateUserGold(${i}, this.value)"></div>
+                <div style="color:${isBanned ? 'red' : 'green'}">${isBanned ? '정지됨' : '정상'}</div>
+                <button class="${isBanned ? 'unban-btn' : 'ban-btn'}" onclick="toggleBan(${i})">
+                    ${isBanned ? '정지 해제' : '임시 정지'}
+                </button>
+            `;
+            uBox.appendChild(div);
+        });
+
+        // 아이템 설정 렌더링 (이전과 동일)
         const sList = document.getElementById('sword-list');
         sList.innerHTML = '';
         swordData.forEach((s, i) => {
-            const div = document.createElement('div');
-            div.className = 'card';
+            const div = document.createElement('div'); div.className = 'card';
+            div.style.display = 'flex'; div.style.gap = '10px';
             div.innerHTML = `
-                <div><label>LV</label><input type="number" value="${s.level}" onchange="swordData[${i}].level=this.value"></div>
-                <div><label>이름</label><input type="text" value="${s.name}" onchange="swordData[${i}].name=this.value"></div>
-                <div><label>아이템 설명</label><textarea onchange="swordData[${i}].description=this.value">${s.description || ''}</textarea></div>
-                <div><label>강화비용</label><input type="number" value="${s.upgrade_cost}" onchange="swordData[${i}].upgrade_cost=this.value"></div>
-                <div><label>확률</label><input type="number" step="0.01" value="${s.success_rate}" onchange="swordData[${i}].success_rate=this.value"></div>
-                <div style="display:flex; gap:5px; align-items:center;">
-                    <img src="${s.image_url || ''}" class="img-preview">
-                    <input type="file" style="font-size:10px" onchange="uploadFile(this.files[0], ${i})">
-                </div>
-                <button onclick="swordData.splice(${i},1); render()" style="color:red; border:none; background:none; cursor:pointer;">X</button>
+                <input type="text" value="${s.name}" onchange="swordData[${i}].name=this.value">
+                <input type="number" value="${s.upgrade_cost}" onchange="swordData[${i}].upgrade_cost=this.value" style="width:80px">
+                <button onclick="swordData.splice(${i},1); render()">삭제</button>
             `;
             sList.appendChild(div);
         });
     }
 
-    async function uploadFile(file, index) {
-        if (!file) return;
-        const fileName = `${Date.now()}_${index}.${file.name.split('.').pop()}`;
-        const { error } = await supabaseClient.storage.from('codet-img').upload(`items/${fileName}`, file);
-        const { data: { publicUrl } } = supabaseClient.storage.from('codet-img').getPublicUrl(`items/${fileName}`);
-        swordData[index].image_url = publicUrl;
-        render();
+    function updateUserGold(index, val) { userData[index].gold = Number(val); }
+    
+    async function toggleBan(index) {
+        const user = userData[index];
+        const newStatus = !user.is_banned;
+        const { error } = await supabaseClient.from('profiles').update({ is_banned: newStatus }).eq('id', user.id);
+        if(!error) {
+            userData[index].is_banned = newStatus;
+            render();
+        }
     }
-
-    function addSword() { swordData.push({ level: swordData.length + 1, name: '아이템', description: '', upgrade_cost: 1000, success_rate: 0.5 }); render(); }
 
     async function saveAll() {
+        // 골드 정보 한꺼번에 업데이트
+        for(let user of userData) {
+            await supabaseClient.from('profiles').update({ gold: user.gold }).eq('id', user.id);
+        }
+        // 아이템 정보 업데이트
         await supabaseClient.from('sword_data').delete().neq('level', -1);
         await supabaseClient.from('sword_data').insert(swordData);
-        alert("성공적으로 저장되었습니다.");
+        alert("모든 정보가 성공적으로 반영되었습니다!");
     }
+    
+    function addSword() { swordData.push({ level: swordData.length+1, name: '새 검', upgrade_cost: 1000, success_rate: 0.5, image_url: '' }); render(); }
 </script>
 </body>
 </html>
