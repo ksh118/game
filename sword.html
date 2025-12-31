@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>검 강화 게임</title>
+    <title>검 강화 게임 - 플레이</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { background: #e6e9ed; font-family: 'Pretendard', sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .game-container { width: 100%; max-width: 400px; background: white; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; display: none; }
@@ -13,14 +14,17 @@
         #full-effect { position: fixed; top:0; left:0; width:100%; height:100%; z-index: 9999; display: none; align-items: center; justify-content: center; font-size: 40px; font-weight: 900; color: white; pointer-events: none; text-align: center; }
 
         .header { background: #2c3e50; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .left-group { display: flex; align-items: center; gap: 12px; }
+        
+        /* 홈 버튼 스타일 */
+        .home-btn { background: rgba(255,255,255,0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .home-btn:hover { background: rgba(255,255,255,0.3); }
+
         .gold-wrap { display: flex; align-items: center; gap: 8px; position: relative; }
         .code-btn { background: #f1c40f; border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
         .money-float { position: absolute; right: 40px; top: -10px; font-weight: 900; font-size: 22px; animation: floatUp 3s forwards; pointer-events: none; z-index: 100; }
         @keyframes floatUp { 0% { opacity: 0; transform: translateY(0); } 10% { opacity: 1; } 100% { opacity: 0; transform: translateY(-80px); } }
-
-        .top-bar { width: 100%; max-width: 400px; display: flex; justify-content: flex-end; margin-bottom: 10px; }
-        .check-btn { background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
 
         .img-area { background: #f0f0f0; height: 210px; margin: 15px; border-radius: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .sword-img { max-width: 75%; max-height: 75%; object-fit: contain; }
@@ -30,9 +34,6 @@
         .btn-group { padding: 15px; display: flex; gap: 8px; }
         .btn-main { flex: 2; padding: 16px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #2c3e50; color: white; }
         .btn-sub { flex: 1; padding: 16px; border-radius: 12px; border: none; font-weight: bold; background: #f1f2f6; cursor: pointer; }
-        
-        .rank-box { width: 100%; max-width: 400px; background: white; margin-top: 15px; border-radius: 20px; padding: 15px; box-sizing: border-box; }
-        .rank-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -41,13 +42,14 @@
 <div id="ban-overlay"><h1>🚫</h1><h2>임시 정지되었습니다.</h2><p>관리자에게 문의해주세요.</p></div>
 <div id="full-effect"></div>
 
-<div class="top-bar">
-    <button class="check-btn" onclick="dailyCheck()">📅 출석체크</button>
-</div>
-
 <div class="game-container" id="game-ui">
     <div class="header">
-        <span id="u-nick" style="font-size: 14px;">...님</span>
+        <div class="left-group">
+            <button class="home-btn" onclick="location.href='index.html'" title="홈으로">
+                <i class="fa-solid fa-house"></i>
+            </button>
+            <span id="u-nick" style="font-size: 14px;">...님</span>
+        </div>
         <div class="gold-wrap" id="gold-anchor">
             <span id="u-gold" style="color: #f1c40f; font-weight: bold;">0G</span>
             <button class="code-btn" onclick="redeem()">코드</button>
@@ -70,11 +72,6 @@
     </div>
 </div>
 
-<div class="rank-box">
-    <h4 style="margin:0 0 8px 0;">🏆 전설의 순위</h4>
-    <div id="rank-list"></div>
-</div>
-
 <script>
     const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
@@ -91,7 +88,7 @@
         s.forEach(i => swords[i.level] = i);
         document.getElementById('loading').style.display = 'none';
         document.getElementById('game-ui').style.display = 'block';
-        updateUI(); loadRank();
+        updateUI();
     }
 
     function updateUI() {
@@ -99,7 +96,7 @@
         document.getElementById('u-nick').innerText = user.nickname + "님";
         document.getElementById('u-gold').innerText = user.gold.toLocaleString() + "G";
         
-        // 수정 포인트: item.level-1 대신 item.level을 사용하여 +1부터 시작하게 함
+        // 레벨 표시: +1강부터 표시되도록 설정 유지
         document.getElementById('s-name').innerText = `[+${item.level}] ${item.name}`;
         
         document.getElementById('s-desc').innerText = item.description || "설명 없음";
@@ -114,19 +111,6 @@
         el.innerText = (isPlus ? '+' : '-') + Math.abs(amt).toLocaleString() + 'G';
         document.getElementById('gold-anchor').appendChild(el);
         setTimeout(() => el.remove(), 3000);
-    }
-
-    async function dailyCheck() {
-        const lastCheck = localStorage.getItem(`check_${user.id}`);
-        const today = new Date().toDateString();
-        if(lastCheck === today) return alert("이미 출석했습니다!");
-        const reward = Number(localStorage.getItem('codet_daily')) || 5000;
-        user.gold += reward;
-        await supabaseClient.from('profiles').update({ gold: user.gold }).eq('id', user.id);
-        localStorage.setItem(`check_${user.id}`, today);
-        showGoldEffect(reward, true);
-        alert(`출석 완료! +${reward.toLocaleString()}G`);
-        updateUI(); loadRank();
     }
 
     async function handleUpgrade() {
@@ -146,6 +130,7 @@
                 return alert("최고 레벨!"); 
             }
         } else {
+            // 실패 시 -1LV 하락 유지
             nextLvl = Math.max(1, user.current_sword_lvl - 1);
         }
 
@@ -156,7 +141,7 @@
             img.classList.remove('hammering');
             user.current_sword_lvl = nextLvl;
             showEffect(success);
-            updateUI(); loadRank();
+            updateUI();
         }, 600);
     }
 
@@ -178,7 +163,7 @@
         await supabaseClient.from('profiles').update({ gold: user.gold, current_sword_lvl: 1 }).eq('id', user.id);
         showGoldEffect(price, true);
         alert(`판매 완료! +${price.toLocaleString()}G`);
-        updateUI(); loadRank();
+        updateUI();
     }
 
     async function redeem() {
@@ -188,14 +173,9 @@
         user.gold += data.reward_gold;
         await supabaseClient.from('profiles').update({ gold: user.gold }).eq('id', user.id);
         showGoldEffect(data.reward_gold, true);
-        updateUI(); loadRank();
+        updateUI();
     }
 
-    async function loadRank() {
-        const { data } = await supabaseClient.from('profiles').select('nickname, gold').order('gold', { ascending: false }).limit(5);
-        document.getElementById('rank-list').innerHTML = data.map((r, i) => `
-            <div class="rank-item"><span>${i+1}. ${r.nickname}</span><b>${r.gold.toLocaleString()}G</b></div>`).join('');
-    }
     init();
 </script>
 </body>
