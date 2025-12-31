@@ -19,10 +19,9 @@
         .top-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .top-btn { background: #ddd; border: none; border-radius: 20px; padding: 12px; font-weight: 900; font-size: 18px; cursor: pointer; }
 
-        /* 📢 공지 배너 - 폰에서 확대 안 되게 고침 */
+        /* 📢 공지 배너 - 지정하신 이미지 하나로 고정 및 확대 방지 */
         .banner-container { width: 100%; height: 110px; overflow: hidden; border-radius: 15px; background: #fff; border: 1px solid #ddd; margin-top: 5px; }
-        .banner-wrapper { display: flex; transition: transform 0.6s ease-in-out; height: 100%; }
-        .banner-item { min-width: 100%; height: 100%; flex-shrink: 0; }
+        .banner-item { width: 100%; height: 100%; }
         .banner-item img { width: 100%; height: 100%; display: block; object-fit: contain; background: #fff; }
 
         .bottom-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
@@ -60,9 +59,8 @@
     </div>
 
     <div class="banner-container">
-        <div class="banner-wrapper" id="banner-wrapper">
-            <div class="banner-item"><img src="https://i.ifh.cc/W67OL2.png"></div>
-            <div class="banner-item"><img src="https://i.ifh.cc/kJ2DOB.png"></div>
+        <div class="banner-item">
+            <img src="https://i.ifh.cc/W67OL2.png">
         </div>
     </div>
 
@@ -124,7 +122,6 @@
         user = p;
         if(user.is_banned) { alert("정지된 계정입니다."); handleLogout(); return; }
         updateUI();
-        startBanner();
         document.getElementById('main-ui').style.display = 'flex';
     }
 
@@ -180,18 +177,13 @@
         const newPw = document.getElementById('edit-pw').value;
 
         try {
-            // 1. 기본 정보 업데이트
             await supabaseClient.from('profiles').update(updateData).eq('id', user.id);
-            
-            // 2. 아바타 업데이트 (따로 실행하여 컬럼 오류 시에도 다른 정보는 저장되게 함)
             await supabaseClient.from('profiles').update({ avatar_url: newAvatar }).eq('id', user.id);
-
             if(newPw && newPw.length >= 6) { await supabaseClient.auth.updateUser({ password: newPw }); }
-
             alert("정보가 수정되었습니다.");
             window.location.reload();
         } catch (e) {
-            alert("수정 중 오류 발생");
+            alert("수정 오류");
             btn.innerText = "수정 내용 저장";
             btn.disabled = false;
         }
@@ -204,14 +196,6 @@
     }
 
     async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = "login.html"; }
-    function startBanner() {
-        let idx = 0;
-        setInterval(() => {
-            idx = (idx + 1) % 2;
-            const wrap = document.getElementById('banner-wrapper');
-            if(wrap) wrap.style.transform = `translateX(-${idx * 100}%)`;
-        }, 3500);
-    }
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     init();
