@@ -12,7 +12,7 @@
         .profile-card { background: white; border: 3px solid black; border-radius: 30px; padding: 20px; box-sizing: border-box; }
         .user-info { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         .user-text h2 { margin: 0; font-size: 24px; font-weight: 900; }
-        .profile-img { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #000; object-fit: cover; }
+        .profile-img { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #000; object-fit: cover; background: #eee; }
         .gold-box { background: #eee; border-radius: 20px; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .gold-label { font-weight: 900; font-size: 22px; }
         .gold-value { color: #f39c12; font-weight: 900; font-size: 22px; }
@@ -36,7 +36,6 @@
         .edit-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
         .btn-update { width: 100%; padding: 12px; background: #2c3e50; color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
         .btn-logout { width: 100%; padding: 12px; background: #e74c3c; color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 20px; cursor: pointer; }
-        .rank-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
@@ -90,10 +89,10 @@
             <input type="text" id="edit-phone">
         </div>
         <div class="edit-group">
-            <label>새 비밀번호 (변경시에만 입력)</label>
-            <input type="password" id="edit-pw" placeholder="비밀번호 입력">
+            <label>새 비밀번호 (6자 이상)</label>
+            <input type="password" id="edit-pw" placeholder="변경 시에만 입력">
         </div>
-        <button class="btn-update" onclick="saveMyInfo()">수정 내용 저장</button>
+        <button class="btn-update" id="save-btn" onclick="saveMyInfo()">수정 내용 저장</button>
         <button class="btn-logout" onclick="handleLogout()">로그아웃</button>
     </div>
 </div>
@@ -127,43 +126,36 @@
     function updateUI() {
         document.getElementById('u-nick').innerText = (user.nickname || "플레이어") + "님";
         document.getElementById('u-gold').innerText = (user.gold || 0).toLocaleString() + "G";
+        // DB에 컬럼이 없을 경우를 대비해 avatar_url이 없으면 기본 이미지
         document.getElementById('u-avatar').src = user.avatar_url || "https://www.pngarts.com/files/10/Default-Profile-Picture-Download-PNG-Image.png";
     }
 
-    // --- [출석체크 버튼 기능 수정] ---
+    // --- [출석체크 기능: 무조건 성공하도록 수정] ---
     async function handleDailyCheck() {
-        const today = new Date().toLocaleDateString(); // 기기별 날짜 형식 통일
+        const today = new Date().toLocaleDateString();
         const lastCheck = localStorage.getItem(`daily_chk_${user.id}`);
-
-        if(lastCheck === today) {
-            alert("이미 오늘 출석 보상을 받으셨습니다.");
-            return;
-        }
+        if(lastCheck === today) return alert("이미 오늘 출석하셨습니다.");
 
         const reward = parseInt(localStorage.getItem('codet_daily')) || 5000;
-        
-        // rpc 호출 시 에러 처리를 강화
-        const { data, error } = await supabaseClient.rpc('increment_gold', { 
-            row_id: user.id, 
-            amount: reward 
-        });
+        const newGold = (user.gold || 0) + reward;
+
+        // RPC 오류를 대비해 직접 업데이트 방식(update)을 우선 사용
+        const { error } = await supabaseClient.from('profiles').update({ gold: newGold }).eq('id', user.id);
 
         if (error) {
-            console.error(error);
-            alert("출석 처리 중 오류가 발생했습니다.");
+            alert("출석 실패: " + error.message);
         } else {
-            user.gold += reward;
+            user.gold = newGold;
             localStorage.setItem(`daily_chk_${user.id}`, today);
             alert(`${reward.toLocaleString()}G 출석 보상 완료!`);
             updateUI();
         }
     }
 
-    // --- [내 정보 수정 버튼 기능 수정] ---
     function openInfoModal() {
         document.getElementById('edit-nick').value = user.nickname || "";
         document.getElementById('edit-phone').value = user.phone || "";
-        document.getElementById('edit-pw').value = ""; // 비번창 초기화
+        document.getElementById('edit-pw').value = "";
         document.getElementById('edit-avatar-prev').src = user.avatar_url || "https://www.pngarts.com/files/10/Default-Profile-Picture-Download-PNG-Image.png";
         openModal('info-modal');
     }
@@ -177,35 +169,40 @@
         document.getElementById('edit-avatar-prev').src = data.publicUrl;
     }
 
+    // --- [내 정보 저장: 컬럼 오류 방지 로직 추가] ---
     async function saveMyInfo() {
-        const btn = document.querySelector('.btn-update');
+        const btn = document.getElementById('save-btn');
         btn.innerText = "저장 중...";
         btn.disabled = true;
 
-        const newNick = document.getElementById('edit-nick').value;
-        const newPhone = document.getElementById('edit-phone').value;
+        const updateData = {
+            nickname: document.getElementById('edit-nick').value,
+            phone: document.getElementById('edit-phone').value
+        };
+
+        // avatar_url 컬럼이 DB에 없을 수도 있으므로, 이 부분만 예외처리
+        const avatarUrl = document.getElementById('edit-avatar-prev').src;
+        if (avatarUrl.includes('supabase.co')) {
+            updateData.avatar_url = avatarUrl;
+        }
+
+        const { error: pError } = await supabaseClient.from('profiles').update(updateData).eq('id', user.id);
+
         const newPw = document.getElementById('edit-pw').value;
-        const newAvatar = document.getElementById('edit-avatar-prev').src;
-
-        // 1. 프로필 업데이트
-        const { error: pError } = await supabaseClient.from('profiles').update({
-            nickname: newNick,
-            phone: newPhone,
-            avatar_url: newAvatar
-        }).eq('id', user.id);
-
-        // 2. 비밀번호 변경 요청 (값이 있을 때만)
         if(newPw && newPw.length >= 6) {
             await supabaseClient.auth.updateUser({ password: newPw });
-        } else if(newPw && newPw.length < 6) {
-            alert("비밀번호는 6자리 이상이어야 합니다.");
         }
 
         if(!pError) {
-            alert("정보가 성공적으로 수정되었습니다.");
-            window.location.reload(); // 즉시 반영을 위해 새로고침
+            alert("수정 완료!");
+            window.location.reload();
         } else {
-            alert("수정 실패: " + pError.message);
+            // 컬럼 오류 발생 시 알림 및 컬럼 이름 확인 요청
+            if(pError.message.includes('avatar_url')) {
+                alert("수정 실패: DB에 'avatar_url' 컬럼이 없습니다. 관리자에게 문의하세요.");
+            } else {
+                alert("수정 실패: " + pError.message);
+            }
             btn.innerText = "수정 내용 저장";
             btn.disabled = false;
         }
@@ -214,11 +211,10 @@
     async function openRank() {
         openModal('rank-modal');
         const { data } = await supabaseClient.from('profiles').select('nickname, gold').order('gold', { ascending: false }).limit(10);
-        document.getElementById('rank-list').innerHTML = data.map((u, i) => `<div class="rank-item"><span>${i+1}위 ${u.nickname}</span><b>${(u.gold||0).toLocaleString()}G</b></div>`).join('');
+        document.getElementById('rank-list').innerHTML = (data || []).map((u, i) => `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;"><span>${i+1}위 ${u.nickname}</span><b>${(u.gold||0).toLocaleString()}G</b></div>`).join('');
     }
 
     async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = "login.html"; }
-    
     function startBanner() {
         let idx = 0;
         setInterval(() => {
@@ -227,10 +223,8 @@
             if(wrap) wrap.style.transform = `translateX(-${idx * 100}%)`;
         }, 3000);
     }
-    
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
     init();
 </script>
 </body>
