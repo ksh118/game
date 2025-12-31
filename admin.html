@@ -41,9 +41,9 @@
 
     <div id="sword-sec" class="section">
         <div class="section-header"><h2>⚔️ 검 데이터 관리</h2><button class="btn-back" onclick="goHome()">뒤로가기</button></div>
-        <button class="btn-add" onclick="addNewLevel()">+ 새로운 다음 레벨 생성</button>
+        <button class="btn-add" id="add-btn" onclick="addNewLevel()">+ 새로운 다음 레벨 생성</button>
         <div style="overflow-x:auto;">
-            <table style="min-width: 900px;">
+            <table>
                 <thead>
                     <tr>
                         <th width="40">LV</th>
@@ -63,16 +63,11 @@
 
     <div id="user-sec" class="section">
         <div class="section-header"><h2>👥 회원 상태 관리</h2><button class="btn-back" onclick="goHome()">뒤로가기</button></div>
-        <table>
-            <thead><tr><th>닉네임</th><th>골드</th><th>상태</th><th>관리 버튼</th></tr></thead>
-            <tbody id="user-list"></tbody>
-        </table>
+        <table><thead><tr><th>닉네임</th><th>골드</th><th>상태</th><th>관리</th></tr></thead><tbody id="user-list"></tbody></table>
     </div>
-
     <div id="daily-sec" class="section">
-        <div class="section-header"><h2>📅 전역 출석 설정</h2><button class="btn-back" onclick="goHome()">뒤로가기</button></div>
-        <input type="number" id="daily-val" placeholder="출석 보상 금액">
-        <button class="btn-add" onclick="saveDaily()" style="margin-top: 10px;">설정 저장</button>
+        <div class="section-header"><h2>📅 출석 설정</h2><button class="btn-back" onclick="goHome()">뒤로가기</button></div>
+        <input type="number" id="daily-val"><button class="btn-add" onclick="saveDaily()">저장</button>
     </div>
 </div>
 
@@ -102,44 +97,61 @@
         document.getElementById('home-menu').style.display = 'grid';
     }
 
-    // --- 검 관리 로직 (Duplicate Key 오류 방지) ---
+    // --- 레벨 추가 핵심 수정 ---
     async function addNewLevel() {
-        // 1. 현재 DB에서 가장 높은 레벨을 다시 확인
-        const { data } = await supabaseClient.from('sword_data').select('level').order('level', { descending: true }).limit(1);
-        const nextLv = (data && data.length > 0) ? data[0].level + 1 : 1;
+        const addBtn = document.getElementById('add-btn');
+        addBtn.innerText = "생성 중...";
+        addBtn.disabled = true;
 
-        // 2. 새로운 레벨 삽입 (설명 필드 포함)
-        const { error } = await supabaseClient.from('sword_data').insert([{ 
-            level: nextLv, 
-            name: '새로운 검', 
-            description: '검에 대한 설명을 입력하세요.',
-            success_rate: 0.1, 
-            upgrade_cost: 10000, 
-            sell_price: 5000, 
-            image_url: '' 
-        }]);
+        try {
+            // 1. 현재 DB의 모든 데이터를 가져와서 실제 최대 레벨 계산 (캐시 오류 방지)
+            const { data: allSwords, error: fetchError } = await supabaseClient
+                .from('sword_data')
+                .select('level');
+            
+            if(fetchError) throw fetchError;
 
-        if(error) {
-            alert("레벨 추가 실패: " + error.message);
-        } else {
-            alert(nextLv + "레벨이 생성되었습니다.");
-            loadSwords();
+            const maxLv = allSwords.length > 0 ? Math.max(...allSwords.map(s => s.level)) : 0;
+            const nextLv = maxLv + 1;
+
+            // 2. 새 레벨 추가
+            const { error: insertError } = await supabaseClient.from('sword_data').insert([{ 
+                level: nextLv, 
+                name: nextLv + '강 검', 
+                description: '검에 대한 설명을 입력하세요.',
+                success_rate: 0.1, 
+                upgrade_cost: 10000, 
+                sell_price: 5000, 
+                image_url: 'https://i.ifh.cc/Y15g2p.png' // 기본 이미지
+            }]);
+
+            if(insertError) throw insertError;
+
+            alert(nextLv + "레벨이 성공적으로 생성되었습니다.");
+            await loadSwords(); // 목록 다시 불러오기
+        } catch (err) {
+            console.error(err);
+            alert("레벨 추가 실패: " + err.message);
+        } finally {
+            addBtn.innerText = "+ 새로운 다음 레벨 생성";
+            addBtn.disabled = false;
         }
     }
 
     async function loadSwords() {
-        const { data } = await supabaseClient.from('sword_data').select('*').order('level', { ascending: true });
+        const { data, error } = await supabaseClient.from('sword_data').select('*').order('level', { ascending: true });
+        if(error) return;
         const tbody = document.getElementById('sword-list');
         tbody.innerHTML = "";
         data.forEach(s => {
             tbody.innerHTML += `
                 <tr>
                     <td>${s.level}</td>
-                    <td><input id="n-${s.level}" value="${s.name}"></td>
+                    <td><input id="n-${s.level}" value="${s.name || ''}"></td>
                     <td><textarea id="d-${s.level}" rows="2">${s.description || ''}</textarea></td>
-                    <td><input id="r-${s.level}" type="number" step="0.01" value="${s.success_rate}"></td>
-                    <td><input id="c-${s.level}" type="number" value="${s.upgrade_cost}"></td>
-                    <td><input id="s-${s.level}" type="number" value="${s.sell_price}"></td>
+                    <td><input id="r-${s.level}" type="number" step="0.01" value="${s.success_rate || 0}"></td>
+                    <td><input id="c-${s.level}" type="number" value="${s.upgrade_cost || 0}"></td>
+                    <td><input id="s-${s.level}" type="number" value="${s.sell_price || 0}"></td>
                     <td>
                         <img src="${s.image_url}" class="preview-img" id="prev-${s.level}"><br>
                         <input type="file" onchange="uploadImg(${s.level}, this.files[0])" style="font-size:10px; width: 100px;">
@@ -160,33 +172,20 @@
         };
         const { error } = await supabaseClient.from('sword_data').update(updateData).eq('level', lvl);
         if(!error) alert(lvl + "LV 저장 완료");
-        else alert("저장 실패: " + error.message);
     }
 
-    // --- 회원 정지 상태 실시간 변경 ---
     async function loadUsers() {
         const { data } = await supabaseClient.from('profiles').select('*').order('gold', { ascending: false });
         const tbody = document.getElementById('user-list'); tbody.innerHTML = "";
         data.forEach(u => {
             const isBanned = u.is_banned === true;
-            tbody.innerHTML += `
-                <tr>
-                    <td>${u.nickname}</td>
-                    <td>${u.gold.toLocaleString()}</td>
-                    <td style="color:${isBanned?'red':'green'}; font-weight:bold;">${isBanned?'정지됨':'정상'}</td>
-                    <td>
-                        <button class="btn-action" style="background:${isBanned?'#2ecc71':'#e74c3c'}" onclick="toggleBan('${u.id}', ${!isBanned})">
-                            ${isBanned ? '정지 해제' : '유저 정지'}
-                        </button>
-                    </td>
-                </tr>`;
+            tbody.innerHTML += `<tr><td>${u.nickname}</td><td>${(u.gold||0).toLocaleString()}</td>
+            <td style="color:${isBanned?'red':'green'}">${isBanned?'정지':'정상'}</td>
+            <td><button class="btn-action" style="background:${isBanned?'#2ecc71':'#e74c3c'}" onclick="toggleBan('${u.id}', ${!isBanned})">${isBanned?'해제':'정지'}</button></td></tr>`;
         });
     }
 
-    async function toggleBan(id, st) { 
-        await supabaseClient.from('profiles').update({ is_banned: st }).eq('id', id); 
-        loadUsers(); 
-    }
+    async function toggleBan(id, st) { await supabaseClient.from('profiles').update({ is_banned: st }).eq('id', id); loadUsers(); }
 
     async function uploadImg(lvl, file) {
         const path = `swords/lv${lvl}_${Date.now()}.png`;
@@ -195,14 +194,8 @@
         document.getElementById(`prev-${lvl}`).src = data.publicUrl;
     }
 
-    function saveDaily() { 
-        localStorage.setItem('codet_daily', document.getElementById('daily-val').value); 
-        alert("출석 보상이 저장되었습니다. 모든 기기에 반영됩니다."); 
-    }
-
-    function initData() { 
-        document.getElementById('daily-val').value = localStorage.getItem('codet_daily') || 5000; 
-    }
+    function saveDaily() { localStorage.setItem('codet_daily', document.getElementById('daily-val').value); alert("저장됨"); }
+    function initData() { document.getElementById('daily-val').value = localStorage.getItem('codet_daily') || 5000; }
 </script>
 </body>
 </html>
