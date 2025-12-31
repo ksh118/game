@@ -6,17 +6,9 @@
     <title>codetbase - 홈</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* 전체 레이아웃 설정 */
-        body { 
-            background: #f0f0f0; 
-            font-family: 'Pretendard', sans-serif; 
-            margin: 0; 
-            padding: 20px 0; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-        }
-
+        body { background: #f0f0f0; font-family: 'Pretendard', sans-serif; margin: 0; padding: 20px 0; display: flex; flex-direction: column; align-items: center; }
+        
+        /* 메인 컨테이너: 모든 요소의 가로폭 기준 */
         .app-container { 
             width: 100%; 
             max-width: 400px; 
@@ -24,17 +16,11 @@
             flex-direction: column; 
             gap: 20px; 
             box-sizing: border-box;
-            padding: 0 20px; /* 모든 요소의 좌우 여백 통일 */
+            padding: 0 20px; 
         }
 
-        /* 상단 프로필 카드 */
-        .profile-card { 
-            background: white; 
-            border: 3px solid black; 
-            border-radius: 30px; 
-            padding: 20px; 
-            box-sizing: border-box; 
-        }
+        /* 프로필 카드 */
+        .profile-card { background: white; border: 3px solid black; border-radius: 30px; padding: 20px; box-sizing: border-box; }
         .user-info { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         .user-text h2 { margin: 0; font-size: 24px; font-weight: 900; }
         .profile-img { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #000; object-fit: cover; }
@@ -44,51 +30,48 @@
         .top-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .top-btn { background: #ddd; border: none; border-radius: 20px; padding: 12px; font-weight: 900; font-size: 18px; cursor: pointer; }
 
-        /* 게임 버튼 섹션 (배너 사이즈 정렬의 기준) */
+        /* ⚔️ 게임 버튼 (이 버튼들의 끝 라인이 기준입니다) */
         .game-btns { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
             gap: 15px; 
             width: 100%;
         }
-        .game-card { width: 100%; cursor: pointer; border-radius: 15px; display: block; }
+        .game-card { width: 100%; cursor: pointer; border-radius: 15px; display: block; height: auto; }
 
-        /* 공지 배너 섹션 (버튼 라인에 맞춤) */
+        /* 📢 공지 배너 (버튼 끝라인에 강제 고정) */
         .banner-container { 
-            width: 100%; 
+            width: 100%; /* 부모 너비(버튼 전체폭)와 동일 */
             overflow: hidden; 
             position: relative; 
             border-radius: 15px;
+            aspect-ratio: 340 / 100; /* 공지 이미지의 가로세로 비율에 맞춰 조절 가능 */
         }
         .banner-wrapper { 
             display: flex; 
             transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); 
             width: 100%; 
+            height: 100%;
         }
         .banner-item { 
-            min-width: 100%; /* 배너 한 장이 버튼 끝선까지 꽉 차게 설정 */
+            min-width: 100%; 
+            height: 100%;
             flex-shrink: 0;
         }
         .banner-item img { 
             width: 100%; 
-            height: auto; 
+            height: 100%; 
             display: block;
+            object-fit: fill; /* 이미지 비율 무시하고 가로폭을 버튼 끝선에 강제로 맞춤 */
             border-radius: 15px;
         }
 
-        /* 하단 메뉴 */
         .bottom-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .menu-btn { background: #c2cfff; border: none; border-radius: 20px; padding: 15px; font-weight: 900; font-size: 20px; cursor: pointer; }
 
-        /* 모달 스타일 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 85%; max-width: 350px; border-radius: 20px; padding: 20px; position: relative; }
         .close-btn { position: absolute; top: 15px; right: 15px; font-size: 20px; cursor: pointer; font-weight: bold; }
-        .rank-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .edit-row { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
-        .edit-row input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
-        .edit-row button { background: #2c3e50; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; }
-
         .footer { text-align: center; color: #666; font-size: 11px; margin-top: 30px; line-height: 1.6; width: 100%; }
     </style>
 </head>
@@ -124,52 +107,28 @@
         <button class="menu-btn" onclick="openModal('info-modal')">나의정보</button>
     </div>
 
-    <div class="footer">
-        상호: 1 | 대표: 1<br>
-        개인정보관리책임자: 1 | 호스팅제공자: 1<br>
-        © Copyright 나인틴나인. All Rights Reserved.
-    </div>
-</div>
-
-<div id="rank-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-btn" onclick="closeModal('rank-modal')">X</span>
-        <div style="font-weight:900;font-size:20px;text-align:center;margin-bottom:20px;">🏆 골드 랭킹</div>
-        <div id="rank-list"></div>
-    </div>
-</div>
-
-<div id="info-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-btn" onclick="closeModal('info-modal')">X</span>
-        <div style="font-weight:900;font-size:20px;text-align:center;margin-bottom:20px;">👤 나의 정보 수정</div>
-        <div class="edit-row"><label>프로필 사진</label><input type="file" onchange="uploadAvatar(this.files[0])"><button onclick="deleteAvatar()" style="background:#e74c3c; color:white;">기본 프로필로 변경</button></div>
-        <div class="edit-row"><label>닉네임 변경</label><input type="text" id="new-nick" placeholder="최대 15자"><button onclick="updateNick()">변경</button></div>
-        <div class="edit-row"><label>비밀번호 변경</label><input type="password" id="new-pw" placeholder="6자 이상"><button onclick="updatePw()">변경</button></div>
-    </div>
+    <div class="footer">상호: 1 | 대표: 1<br>개인정보관리책임자: 1 | 호스팅제공자: 1<br>© Copyright 나인틴나인. All Rights Reserved.</div>
 </div>
 
 <script>
     const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const DEFAULT_AVATAR = "https://www.pngarts.com/files/10/Default-Profile-Picture-Download-PNG-Image.png";
     let user = null;
 
     async function init() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if(!session) { location.href="login.html"; return; }
         const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
-        user = p; updateHomeUI(); startBanner(); loadRank(); document.getElementById('main-ui').style.display = 'flex';
+        user = p; updateHomeUI(); startBanner(); document.getElementById('main-ui').style.display = 'flex';
     }
 
     function updateHomeUI() {
         document.getElementById('u-nick').innerText = user.nickname + "님";
         document.getElementById('u-gold').innerText = user.gold.toLocaleString() + "G";
-        document.getElementById('u-avatar').src = user.avatar_url || DEFAULT_AVATAR;
+        document.getElementById('u-avatar').src = user.avatar_url || "https://www.pngarts.com/files/10/Default-Profile-Picture-Download-PNG-Image.png";
     }
 
-    // 배너 3초 자동 슬라이드
     let bannerIdx = 0;
     function startBanner() {
         setInterval(() => {
@@ -178,53 +137,7 @@
         }, 3000);
     }
 
-    async function handleDailyCheck() {
-        const lastCheck = localStorage.getItem(`check_${user.id}`);
-        const today = new Date().toDateString();
-        if(lastCheck === today) return alert("이미 오늘 출석하셨습니다!");
-        const reward = Number(localStorage.getItem('codet_daily')) || 5000;
-        user.gold += reward;
-        await supabaseClient.from('profiles').update({ gold: user.gold }).eq('id', user.id);
-        localStorage.setItem(`check_${user.id}`, today);
-        alert(`출석 보상 ${reward.toLocaleString()}G 지급 완료!`); updateHomeUI();
-    }
-
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-    async function loadRank() {
-        const { data } = await supabaseClient.from('profiles').select('nickname, gold').order('gold', { ascending: false }).limit(10);
-        document.getElementById('rank-list').innerHTML = data.map((r, i) => `<div class="rank-row"><span>${i+1}. ${r.nickname}</span><b>${r.gold.toLocaleString()}G</b></div>`).join('');
-    }
-
-    async function uploadAvatar(file) {
-        if(!file) return;
-        const path = `avatars/${user.id}_${Date.now()}.png`;
-        await supabaseClient.storage.from('codet-img').upload(path, file);
-        const { data: { publicUrl } } = supabaseClient.storage.from('codet-img').getPublicUrl(path);
-        await supabaseClient.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
-        user.avatar_url = publicUrl; updateHomeUI(); alert("프로필 사진이 변경되었습니다!");
-    }
-
-    async function deleteAvatar() {
-        await supabaseClient.from('profiles').update({ avatar_url: null }).eq('id', user.id);
-        user.avatar_url = null; updateHomeUI(); alert("기본 프로필로 돌아갔습니다.");
-    }
-
-    async function updateNick() {
-        const nick = document.getElementById('new-nick').value.trim();
-        if(!nick || nick.length > 15 || !/^[a-zA-Z0-9가-힣]+$/.test(nick)) return alert("닉네임은 15자 이내 한글,영문,숫자만 가능합니다.");
-        const { error } = await supabaseClient.from('profiles').update({ nickname: nick }).eq('id', user.id);
-        if(!error) { user.nickname = nick; updateHomeUI(); alert("닉네임이 변경되었습니다!"); }
-    }
-
-    async function updatePw() {
-        const pw = document.getElementById('new-pw').value;
-        if(pw.length < 6) return alert("비밀번호는 6자리 이상이어야 합니다.");
-        await supabaseClient.auth.updateUser({ password: pw });
-        alert("비밀번호가 변경되었습니다!");
-    }
-
     init();
 </script>
 </body>
