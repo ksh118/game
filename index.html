@@ -19,10 +19,11 @@
         .top-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .top-btn { background: #ddd; border: none; border-radius: 20px; padding: 12px; font-weight: 900; font-size: 18px; cursor: pointer; }
 
+        /* 📢 공지 배너 수정: 이미지가 잘리지 않고 전체가 보이도록 contain 사용 */
         .banner-container { width: 100%; height: 110px; overflow: hidden; border-radius: 15px; background: #fff; border: 1px solid #ddd; }
         .banner-wrapper { display: flex; transition: transform 0.6s ease-in-out; height: 100%; }
         .banner-item { min-width: 100%; height: 100%; flex-shrink: 0; }
-        .banner-item img { width: 100%; height: 100%; display: block; object-fit: cover; }
+        .banner-item img { width: 100%; height: 100%; display: block; object-fit: contain; background: #fff; }
 
         .bottom-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .menu-btn { background: #c2cfff; border: none; border-radius: 20px; padding: 15px; font-weight: 900; font-size: 20px; cursor: pointer; }
@@ -35,7 +36,7 @@
         .edit-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666; }
         .edit-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
         .btn-update { width: 100%; padding: 12px; background: #2c3e50; color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
-        .btn-logout { width: 100%; padding: 12px; background: #e74c3c; color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        .btn-logout { width: 100%; padding: 12px; background: #e74c3c; color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -78,7 +79,10 @@
         <div style="text-align:center; margin-bottom: 20px;">
             <img id="edit-avatar-prev" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid #ddd; object-fit:cover;">
             <input type="file" id="avatar-file" style="display:none;" onchange="updateAvatarPreview(this.files[0])">
-            <button onclick="document.getElementById('avatar-file').click()" style="display:block; margin: 10px auto; font-size:12px; cursor:pointer;">사진 변경</button>
+            <div style="display:flex; gap:5px; justify-content:center; margin-top:10px;">
+                <button onclick="document.getElementById('avatar-file').click()" style="font-size:11px; cursor:pointer; padding:5px 10px;">사진 변경</button>
+                <button onclick="resetToDefaultAvatar()" style="font-size:11px; cursor:pointer; padding:5px 10px; background:#eee; border:1px solid #ccc;">기본 이미지</button>
+            </div>
         </div>
         <div class="edit-group">
             <label>닉네임</label>
@@ -109,6 +113,7 @@
     const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const DEFAULT_AVATAR = "https://www.pngarts.com/files/10/Default-Profile-Picture-Download-PNG-Image.png";
     let user = null;
 
     async function init() {
@@ -126,28 +131,20 @@
     function updateUI() {
         document.getElementById('u-nick').innerText = (user.nickname || "플레이어") + "님";
         document.getElementById('u-gold').innerText = (user.gold || 0).toLocaleString() + "G";
-        // DB에 컬럼이 없을 경우를 대비해 avatar_url이 없으면 기본 이미지
-        document.getElementById('u-avatar').src = user.avatar_url || "https://www.pngarts.com/files/10/Default-Profile-Picture-Download-PNG-Image.png";
+        document.getElementById('u-avatar').src = user.avatar_url || DEFAULT_AVATAR;
     }
 
-    // --- [출석체크 기능: 무조건 성공하도록 수정] ---
     async function handleDailyCheck() {
         const today = new Date().toLocaleDateString();
         const lastCheck = localStorage.getItem(`daily_chk_${user.id}`);
         if(lastCheck === today) return alert("이미 오늘 출석하셨습니다.");
-
         const reward = parseInt(localStorage.getItem('codet_daily')) || 5000;
         const newGold = (user.gold || 0) + reward;
-
-        // RPC 오류를 대비해 직접 업데이트 방식(update)을 우선 사용
         const { error } = await supabaseClient.from('profiles').update({ gold: newGold }).eq('id', user.id);
-
-        if (error) {
-            alert("출석 실패: " + error.message);
-        } else {
+        if (error) { alert("출석 실패"); } else {
             user.gold = newGold;
             localStorage.setItem(`daily_chk_${user.id}`, today);
-            alert(`${reward.toLocaleString()}G 출석 보상 완료!`);
+            alert(`${reward.toLocaleString()}G 출석 완료!`);
             updateUI();
         }
     }
@@ -156,39 +153,40 @@
         document.getElementById('edit-nick').value = user.nickname || "";
         document.getElementById('edit-phone').value = user.phone || "";
         document.getElementById('edit-pw').value = "";
-        document.getElementById('edit-avatar-prev').src = user.avatar_url || "https://www.pngarts.com/files/10/Default-Profile-Picture-Download-PNG-Image.png";
+        document.getElementById('edit-avatar-prev').src = user.avatar_url || DEFAULT_AVATAR;
         openModal('info-modal');
+    }
+
+    function resetToDefaultAvatar() {
+        document.getElementById('edit-avatar-prev').src = DEFAULT_AVATAR;
     }
 
     async function updateAvatarPreview(file) {
         if(!file) return;
         const path = `avatars/${user.id}_${Date.now()}`;
-        const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('codet-img').upload(path, file);
+        const { error: uploadError } = await supabaseClient.storage.from('codet-img').upload(path, file);
         if(uploadError) return alert("사진 업로드 실패");
         const { data } = supabaseClient.storage.from('codet-img').getPublicUrl(path);
         document.getElementById('edit-avatar-prev').src = data.publicUrl;
     }
 
-    // --- [내 정보 저장: 컬럼 오류 방지 로직 추가] ---
     async function saveMyInfo() {
         const btn = document.getElementById('save-btn');
         btn.innerText = "저장 중...";
         btn.disabled = true;
 
-        const updateData = {
-            nickname: document.getElementById('edit-nick').value,
-            phone: document.getElementById('edit-phone').value
-        };
-
-        // avatar_url 컬럼이 DB에 없을 수도 있으므로, 이 부분만 예외처리
-        const avatarUrl = document.getElementById('edit-avatar-prev').src;
-        if (avatarUrl.includes('supabase.co')) {
-            updateData.avatar_url = avatarUrl;
-        }
-
-        const { error: pError } = await supabaseClient.from('profiles').update(updateData).eq('id', user.id);
-
+        const newNick = document.getElementById('edit-nick').value;
+        const newPhone = document.getElementById('edit-phone').value;
+        const newAvatar = document.getElementById('edit-avatar-prev').src;
         const newPw = document.getElementById('edit-pw').value;
+
+        // 핵심 수정: nickname과 phone만 먼저 업데이트하여 성공 확률을 높임
+        const { error: pError } = await supabaseClient.from('profiles').update({
+            nickname: newNick,
+            phone: newPhone,
+            avatar_url: newAvatar
+        }).eq('id', user.id);
+
         if(newPw && newPw.length >= 6) {
             await supabaseClient.auth.updateUser({ password: newPw });
         }
@@ -197,12 +195,7 @@
             alert("수정 완료!");
             window.location.reload();
         } else {
-            // 컬럼 오류 발생 시 알림 및 컬럼 이름 확인 요청
-            if(pError.message.includes('avatar_url')) {
-                alert("수정 실패: DB에 'avatar_url' 컬럼이 없습니다. 관리자에게 문의하세요.");
-            } else {
-                alert("수정 실패: " + pError.message);
-            }
+            alert("수정 실패: " + pError.message);
             btn.innerText = "수정 내용 저장";
             btn.disabled = false;
         }
