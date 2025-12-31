@@ -15,24 +15,23 @@
         .btn-login:hover { background: #1a252f; }
         .btn-join { background: #f1f2f6; color: #2c3e50; }
         .btn-join:hover { background: #e2e4e9; }
-        .info-text { font-size: 12px; color: #7f8c8d; text-align: center; margin-top: 10px; }
+        .info-text { font-size: 11px; color: #7f8c8d; text-align: center; margin-top: 10px; line-height: 1.4; }
     </style>
 </head>
 <body>
 
 <div class="login-box">
     <h2>⚔️ 검 강화 게임</h2>
-    
-    <input type="tel" id="phone" placeholder="전화번호 (숫자만 입력)" maxlength="11">
-    
+    <input type="tel" id="phone" placeholder="전화번호 (숫자만)" maxlength="11">
     <input type="password" id="pw" placeholder="비밀번호 (6자 이상)">
-    
-    <input type="text" id="nick" placeholder="닉네임" style="display: none;">
+    <input type="text" id="nick" placeholder="닉네임 (15자 이하)" maxlength="15" style="display: none;">
     
     <button class="btn-login" id="main-btn" onclick="handleAuth()">로그인</button>
     <button class="btn-join" id="sub-btn" onclick="toggleMode()">계정 만들기</button>
     
-    <div class="info-text" id="mode-desc">아이디 대신 전화번호를 사용합니다.</div>
+    <div class="info-text" id="mode-desc">
+        닉네임은 한글, 영문, 숫자만 가능합니다.<br>(공백/특수문자 불가, 최대 15자)
+    </div>
 </div>
 
 <script>
@@ -42,13 +41,17 @@
 
     let isJoinMode = false;
 
-    // 회원가입/로그인 모드 전환
     function toggleMode() {
         isJoinMode = !isJoinMode;
         document.getElementById('nick').style.display = isJoinMode ? 'block' : 'none';
         document.getElementById('main-btn').innerText = isJoinMode ? '회원가입' : '로그인';
         document.getElementById('sub-btn').innerText = isJoinMode ? '로그인하러 가기' : '계정 만들기';
-        document.getElementById('mode-desc').innerText = isJoinMode ? "회원정보를 입력해주세요." : "아이디 대신 전화번호를 사용합니다.";
+    }
+
+    // 닉네임 유효성 검사 (한글, 영문, 숫자만 허용)
+    function validateNickname(nickname) {
+        const regex = /^[a-zA-Z0-9가-힣]+$/;
+        return regex.test(nickname);
     }
 
     async function handleAuth() {
@@ -59,48 +62,47 @@
         if(!phone || phone.length < 10) return alert("올바른 전화번호를 입력하세요.");
         if(pw.length < 6) return alert("비밀번호는 6자리 이상이어야 합니다.");
 
-        // 전화번호를 이메일 주소 형태로 변환 (Supabase Auth 호환용)
         const userIdentifier = `${phone}@phone.game`;
 
         if (isJoinMode) {
+            // 1. 닉네임 기본 검사
             if(!nick) return alert("닉네임을 입력하세요.");
-            
-            // 1. 회원가입 시도
+            if(nick.length > 15) return alert("닉네임은 최대 15자까지 가능합니다.");
+            if(!validateNickname(nick)) return alert("닉네임에 공백이나 특수문자를 사용할 수 없습니다.");
+
+            // 2. 닉네임 중복 체크
+            const { data: existingUser, error: checkError } = await supabaseClient
+                .from('profiles')
+                .select('nickname')
+                .eq('nickname', nick)
+                .maybeSingle();
+
+            if (checkError) return alert("데이터 확인 중 오류 발생");
+            if (existingUser) return alert("이미 존재하는 닉네임입니다.");
+
+            // 3. 회원가입 진행
             const { data, error } = await supabaseClient.auth.signUp({ 
                 email: userIdentifier, 
                 password: pw 
             });
 
             if (error) return alert("가입 실패: " + error.message);
-            if (!data.user) return alert("가입 처리 중 오류가 발생했습니다.");
 
-            // 2. 프로필 DB 생성 (기본 골드 10000, 1레벨 검 세팅)
+            // 4. 프로필 생성
             const { error: profileError } = await supabaseClient.from('profiles').insert([
-                { 
-                    id: data.user.id, 
-                    nickname: nick, 
-                    gold: 10000, 
-                    current_sword_lvl: 1 
-                }
+                { id: data.user.id, nickname: nick, gold: 10000, current_sword_lvl: 1 }
             ]);
 
-            if (profileError) {
-                console.error(profileError);
-                return alert("프로필 생성 오류: " + profileError.message);
-            }
+            if (profileError) return alert("프로필 생성 실패");
 
-            alert("회원가입 성공! 이제 로그인을 해주세요.");
+            alert("회원가입 성공! 로그인해주세요.");
             toggleMode();
         } else {
-            // 로그인 시도
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ 
+            const { error } = await supabaseClient.auth.signInWithPassword({ 
                 email: userIdentifier, 
                 password: pw 
             });
-
-            if (error) return alert("로그인 실패: 번호 또는 비밀번호를 확인하세요.");
-            
-            // 로그인 성공 시 메인 게임 화면으로 이동
+            if (error) return alert("로그인 실패: 번호 또는 비밀번호 확인");
             location.href = "index.html";
         }
     }
