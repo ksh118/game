@@ -19,7 +19,7 @@
         .top-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .top-btn { background: #ddd; border: none; border-radius: 20px; padding: 12px; font-weight: 900; font-size: 18px; cursor: pointer; }
 
-        /* 📢 공지 배너 - 지정하신 이미지 하나로 고정 및 확대 방지 */
+        /* 공지 배너 고정 설정 */
         .banner-container { width: 100%; height: 110px; overflow: hidden; border-radius: 15px; background: #fff; border: 1px solid #ddd; margin-top: 5px; }
         .banner-item { width: 100%; height: 100%; }
         .banner-item img { width: 100%; height: 100%; display: block; object-fit: contain; background: #fff; }
@@ -78,8 +78,8 @@
             <img id="edit-avatar-prev" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid #ddd; object-fit:cover;">
             <input type="file" id="avatar-file" style="display:none;" onchange="updateAvatarPreview(this.files[0])">
             <div style="display:flex; gap:5px; justify-content:center; margin-top:10px;">
-                <button onclick="document.getElementById('avatar-file').click()" style="font-size:11px; cursor:pointer;">사진 변경</button>
-                <button onclick="resetToDefaultAvatar()" style="font-size:11px; cursor:pointer; background:#eee;">기본 이미지</button>
+                <button onclick="document.getElementById('avatar-file').click()" style="font-size:11px; cursor:pointer; padding:5px 10px;">사진 변경</button>
+                <button onclick="resetToDefaultAvatar()" style="font-size:11px; cursor:pointer; padding:5px 10px; background:#eee; border:1px solid #ccc;">기본 이미지</button>
             </div>
         </div>
         <div class="edit-group">
@@ -159,7 +159,8 @@
     async function updateAvatarPreview(file) {
         if(!file) return;
         const path = `avatars/${user.id}_${Date.now()}`;
-        await supabaseClient.storage.from('codet-img').upload(path, file);
+        const { error: uploadError } = await supabaseClient.storage.from('codet-img').upload(path, file);
+        if(uploadError) return alert("사진 업로드 실패");
         const { data } = supabaseClient.storage.from('codet-img').getPublicUrl(path);
         document.getElementById('edit-avatar-prev').src = data.publicUrl;
     }
@@ -169,21 +170,23 @@
         btn.innerText = "저장 중...";
         btn.disabled = true;
 
-        const updateData = {
-            nickname: document.getElementById('edit-nick').value,
-            phone: document.getElementById('edit-phone').value
-        };
+        const newNick = document.getElementById('edit-nick').value;
+        const newPhone = document.getElementById('edit-phone').value;
         const newAvatar = document.getElementById('edit-avatar-prev').src;
         const newPw = document.getElementById('edit-pw').value;
 
         try {
-            await supabaseClient.from('profiles').update(updateData).eq('id', user.id);
+            // 1. 닉네임, 전화번호 업데이트
+            await supabaseClient.from('profiles').update({ nickname: newNick, phone: newPhone }).eq('id', user.id);
+            // 2. 아바타 업데이트 (분리해서 안정성 확보)
             await supabaseClient.from('profiles').update({ avatar_url: newAvatar }).eq('id', user.id);
+            // 3. 비밀번호 변경
             if(newPw && newPw.length >= 6) { await supabaseClient.auth.updateUser({ password: newPw }); }
+
             alert("정보가 수정되었습니다.");
             window.location.reload();
         } catch (e) {
-            alert("수정 오류");
+            alert("수정 실패: " + e.message);
             btn.innerText = "수정 내용 저장";
             btn.disabled = false;
         }
