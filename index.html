@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>검 강화 게임 - 홈</title>
+    <title>codetbase - 홈</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #f0f0f0; font-family: 'Pretendard', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .app-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
 
-        /* 상단 프로필 섹션 */
-        .profile-card { background: white; border: 3px solid black; border-radius: 30px; padding: 20px; position: relative; }
+        .profile-card { background: white; border: 3px solid black; border-radius: 30px; padding: 20px; position: relative; box-sizing: border-box; }
         .user-info { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         .user-text h2 { margin: 0; font-size: 24px; font-weight: 900; }
         .profile-img { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #000; object-fit: cover; }
@@ -20,36 +19,26 @@
         .top-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .top-btn { background: #ddd; border: none; border-radius: 20px; padding: 12px; font-weight: 900; font-size: 18px; cursor: pointer; }
 
-        /* 게임 버튼 섹션 */
         .game-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .game-card { width: 100%; cursor: pointer; border-radius: 15px; transition: 0.2s; }
-        .game-card:active { transform: scale(0.95); }
 
-        /* 자동 슬라이드 배너 */
-        .banner-container { width: 100%; overflow: hidden; position: relative; border-radius: 15px; }
-        .banner-wrapper { display: flex; transition: transform 0.5s ease-in-out; width: 200%; }
-        .banner-item { width: 85%; flex-shrink: 0; margin-right: 5%; }
-        .banner-item img { width: 100%; border-radius: 15px; }
+        /* 배너 자동 슬라이드 */
+        .banner-container { width: 100%; overflow: hidden; position: relative; border-radius: 20px; }
+        .banner-wrapper { display: flex; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); width: 100%; }
+        .banner-item { min-width: 90%; margin-right: 10px; flex-shrink: 0; }
+        .banner-item img { width: 100%; border-radius: 20px; display: block; }
 
-        /* 하단 메뉴 */
         .bottom-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .menu-btn { background: #c2cfff; border: none; border-radius: 20px; padding: 15px; font-weight: 900; font-size: 20px; cursor: pointer; }
 
-        /* 모달 팝업 공통 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 85%; max-width: 350px; border-radius: 20px; padding: 20px; position: relative; }
         .close-btn { position: absolute; top: 15px; right: 15px; font-size: 20px; cursor: pointer; font-weight: bold; }
-        .modal-title { font-weight: 900; font-size: 20px; margin-bottom: 20px; text-align: center; }
-
-        /* 내 정보 수정 입력창 */
+        .rank-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
         .edit-row { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
         .edit-row input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
         .edit-row button { background: #2c3e50; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; }
 
-        /* 랭킹 리스트 */
-        .rank-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
-
-        /* 푸터 정보 */
         .footer { text-align: center; color: #666; font-size: 11px; margin-top: 30px; line-height: 1.6; }
     </style>
 </head>
@@ -58,16 +47,10 @@
 <div class="app-container" id="main-ui" style="display:none;">
     <div class="profile-card">
         <div class="user-info">
-            <div class="user-text">
-                <h2 id="u-nick">000님</h2>
-                <h2 style="font-size: 22px;">안녕하세요!</h2>
-            </div>
+            <div class="user-text"><h2 id="u-nick">...님</h2><h2 style="font-size: 22px;">안녕하세요!</h2></div>
             <img id="u-avatar" src="https://www.pngarts.com/files/10/Default-Profile-Picture-Download-PNG-Image.png" class="profile-img">
         </div>
-        <div class="gold-box">
-            <span class="gold-label">GOLD:</span>
-            <span class="gold-value" id="u-gold">00000G</span>
-        </div>
+        <div class="gold-box"><span class="gold-label">GOLD:</span><span class="gold-value" id="u-gold">0G</span></div>
         <div class="top-btns">
             <button class="top-btn" onclick="openModal('rank-modal')">랭킹</button>
             <button class="top-btn" onclick="handleDailyCheck()">출석체크</button>
@@ -91,48 +74,16 @@
         <button class="menu-btn" onclick="openModal('info-modal')">나의정보</button>
     </div>
 
-    <div class="footer">
-        상호: 1 | 대표: 1<br>
-        개인정보관리책임자: 1 | 호스팅제공자: 1<br>
-        © Copyright 나인틴나인. All Rights Reserved.
-    </div>
+    <div class="footer">상호: 1 | 대표: 1<br>개인정보관리책임자: 1 | 호스팅제공자: 1<br>© Copyright 나인틴나인. All Rights Reserved.</div>
 </div>
 
-<div id="rank-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-btn" onclick="closeModal('rank-modal')">X</span>
-        <div class="modal-title">🏆 골드 랭킹</div>
-        <div id="rank-list"></div>
-    </div>
-</div>
+<div id="rank-modal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('rank-modal')">X</span><div style="font-weight:900;font-size:20px;text-align:center;margin-bottom:20px;">🏆 골드 랭킹</div><div id="rank-list"></div></div></div>
 
-<div id="info-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-btn" onclick="closeModal('info-modal')">X</span>
-        <div class="modal-title">👤 나의 정보 수정</div>
-        
-        <div class="edit-row">
-            <label>프로필 사진</label>
-            <input type="file" id="file-input" onchange="uploadAvatar(this.files[0])">
-            <button onclick="deleteAvatar()" style="background:#e74c3c;">프로필 삭제(기본으로)</button>
-        </div>
-        <div class="edit-row">
-            <label>닉네임 변경</label>
-            <input type="text" id="new-nick" placeholder="15자 이내">
-            <button onclick="updateNick()">변경</button>
-        </div>
-        <div class="edit-row">
-            <label>전화번호 변경</label>
-            <input type="tel" id="new-phone" placeholder="숫자만">
-            <button onclick="updatePhone()">변경</button>
-        </div>
-        <div class="edit-row">
-            <label>비밀번호 변경</label>
-            <input type="password" id="new-pw" placeholder="6자 이상">
-            <button onclick="updatePw()">변경</button>
-        </div>
-    </div>
-</div>
+<div id="info-modal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('info-modal')">X</span><div style="font-weight:900;font-size:20px;text-align:center;margin-bottom:20px;">👤 나의 정보 수정</div>
+    <div class="edit-row"><label>프로필 사진</label><input type="file" onchange="uploadAvatar(this.files[0])"><button onclick="deleteAvatar()" style="background:#e74c3c;">프로필 삭제(기본으로)</button></div>
+    <div class="edit-row"><label>닉네임 변경</label><input type="text" id="new-nick" maxlength="15"><button onclick="updateNick()">변경</button></div>
+    <div class="edit-row"><label>비밀번호 변경</label><input type="password" id="new-pw"><button onclick="updatePw()">변경</button></div>
+</div></div>
 
 <script>
     const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
@@ -145,11 +96,7 @@
         const { data: { session } } = await supabaseClient.auth.getSession();
         if(!session) { location.href="login.html"; return; }
         const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
-        user = p;
-        updateHomeUI();
-        startBanner();
-        loadRank();
-        document.getElementById('main-ui').style.display = 'flex';
+        user = p; updateHomeUI(); startBanner(); loadRank(); document.getElementById('main-ui').style.display = 'flex';
     }
 
     function updateHomeUI() {
@@ -158,41 +105,33 @@
         document.getElementById('u-avatar').src = user.avatar_url || DEFAULT_AVATAR;
     }
 
-    // 배너 자동 슬라이드 (3초)
     let bannerIdx = 0;
     function startBanner() {
         setInterval(() => {
-            bannerIdx = bannerIdx === 0 ? 1 : 0;
-            document.getElementById('banner-wrapper').style.transform = `translateX(-${bannerIdx * 47.5}%)`;
+            bannerIdx = (bannerIdx + 1) % 2;
+            document.getElementById('banner-wrapper').style.transform = `translateX(-${bannerIdx * 92.5}%)`;
         }, 3000);
     }
 
-    // 출석 체크 (검 강화 게임과 동일한 로직 연동)
     async function handleDailyCheck() {
         const lastCheck = localStorage.getItem(`check_${user.id}`);
         const today = new Date().toDateString();
         if(lastCheck === today) return alert("이미 오늘 출석하셨습니다!");
-        
         const reward = Number(localStorage.getItem('codet_daily')) || 5000;
         user.gold += reward;
         await supabaseClient.from('profiles').update({ gold: user.gold }).eq('id', user.id);
         localStorage.setItem(`check_${user.id}`, today);
-        alert(`출석 보상 ${reward.toLocaleString()}G 지급 완료!`);
-        updateHomeUI();
+        alert(`출석 보상 ${reward.toLocaleString()}G 지급 완료!`); updateHomeUI();
     }
 
-    // 모달 제어
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    // 랭킹 로드
     async function loadRank() {
         const { data } = await supabaseClient.from('profiles').select('nickname, gold').order('gold', { ascending: false }).limit(10);
-        document.getElementById('rank-list').innerHTML = data.map((r, i) => `
-            <div class="rank-row"><span>${i+1}. ${r.nickname}</span><b>${r.gold.toLocaleString()}G</b></div>`).join('');
+        document.getElementById('rank-list').innerHTML = data.map((r, i) => `<div class="rank-row"><span>${i+1}. ${r.nickname}</span><b>${r.gold.toLocaleString()}G</b></div>`).join('');
     }
 
-    // 정보 수정 함수들
     async function uploadAvatar(file) {
         if(!file) return;
         const path = `avatars/${user.id}_${Date.now()}.png`;
@@ -209,15 +148,9 @@
 
     async function updateNick() {
         const nick = document.getElementById('new-nick').value.trim();
-        if(!nick || nick.length > 15) return alert("닉네임 규칙 위반");
+        if(!nick || nick.length > 15 || !/^[a-zA-Z0-9가-힣]+$/.test(nick)) return alert("닉네임 규칙 위반 (공백/특수문자 불가)");
         const { error } = await supabaseClient.from('profiles').update({ nickname: nick }).eq('id', user.id);
         if(!error) { user.nickname = nick; updateHomeUI(); alert("닉네임 변경됨!"); }
-    }
-
-    async function updatePhone() {
-        const phone = document.getElementById('new-phone').value.trim();
-        // 실제로는 auth.updateUser를 써야 하지만, 여기서는 간략히 로직만 안내
-        alert("전화번호 업데이트는 보안상 추가 인증이 필요할 수 있습니다.");
     }
 
     async function updatePw() {
