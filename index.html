@@ -8,16 +8,7 @@
     <style>
         body { background: #f0f0f0; font-family: 'Pretendard', sans-serif; margin: 0; padding: 20px 0; display: flex; flex-direction: column; align-items: center; }
         
-        /* 메인 컨테이너: 모든 요소의 가로폭 기준 */
-        .app-container { 
-            width: 100%; 
-            max-width: 400px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 20px; 
-            box-sizing: border-box;
-            padding: 0 20px; 
-        }
+        .app-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box; padding: 0 20px; }
 
         /* 프로필 카드 */
         .profile-card { background: white; border: 3px solid black; border-radius: 30px; padding: 20px; box-sizing: border-box; }
@@ -30,49 +21,38 @@
         .top-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .top-btn { background: #ddd; border: none; border-radius: 20px; padding: 12px; font-weight: 900; font-size: 18px; cursor: pointer; }
 
-        /* ⚔️ 게임 버튼 (이 버튼들의 끝 라인이 기준입니다) */
-        .game-btns { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
-            width: 100%;
-        }
+        /* 게임 버튼 (기준선) */
+        .game-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
         .game-card { width: 100%; cursor: pointer; border-radius: 15px; display: block; height: auto; }
 
-        /* 📢 공지 배너 (버튼 끝라인에 강제 고정) */
+        /* 📢 공지 배너 (모바일 최적화) */
         .banner-container { 
-            width: 100%; /* 부모 너비(버튼 전체폭)와 동일 */
+            width: 100%; 
             overflow: hidden; 
             position: relative; 
-            border-radius: 15px;
-            aspect-ratio: 340 / 100; /* 공지 이미지의 가로세로 비율에 맞춰 조절 가능 */
+            border-radius: 15px; 
+            background: #fff;
+            border: 1px solid #ddd;
         }
-        .banner-wrapper { 
-            display: flex; 
-            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); 
-            width: 100%; 
-            height: 100%;
-        }
-        .banner-item { 
-            min-width: 100%; 
-            height: 100%;
-            flex-shrink: 0;
-        }
+        .banner-wrapper { display: flex; transition: transform 0.6s ease-in-out; width: 100%; }
+        .banner-item { min-width: 100%; flex-shrink: 0; }
         .banner-item img { 
             width: 100%; 
-            height: 100%; 
-            display: block;
-            object-fit: fill; /* 이미지 비율 무시하고 가로폭을 버튼 끝선에 강제로 맞춤 */
-            border-radius: 15px;
+            display: block; 
+            object-fit: contain; /* 사진 비율 유지하며 꽉 채움 */
         }
 
+        /* 하단 메뉴 */
         .bottom-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .menu-btn { background: #c2cfff; border: none; border-radius: 20px; padding: 15px; font-weight: 900; font-size: 20px; cursor: pointer; }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: white; width: 85%; max-width: 350px; border-radius: 20px; padding: 20px; position: relative; }
-        .close-btn { position: absolute; top: 15px; right: 15px; font-size: 20px; cursor: pointer; font-weight: bold; }
-        .footer { text-align: center; color: #666; font-size: 11px; margin-top: 30px; line-height: 1.6; width: 100%; }
+        /* 모달 시스템 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 85%; max-width: 350px; border-radius: 25px; padding: 25px; position: relative; max-height: 80vh; overflow-y: auto; }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; font-weight: bold; }
+        .rank-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+
+        .footer { text-align: center; color: #666; font-size: 11px; margin-top: 30px; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -85,14 +65,14 @@
         </div>
         <div class="gold-box"><span class="gold-label">GOLD:</span><span class="gold-value" id="u-gold">0G</span></div>
         <div class="top-btns">
-            <button class="top-btn" onclick="openModal('rank-modal')">랭킹</button>
+            <button class="top-btn" onclick="openRank()">랭킹</button>
             <button class="top-btn" onclick="handleDailyCheck()">출석체크</button>
         </div>
     </div>
 
     <div class="game-btns">
         <img src="https://i.ifh.cc/Y15g2p.png" class="game-card" onclick="location.href='sword.html'">
-        <img src="https://i.ifh.cc/2DQFLq.png" class="game-card" onclick="alert('서비스가 준비중입니다.')">
+        <img src="https://i.ifh.cc/2DQFLq.png" class="game-card" onclick="alert('준비중입니다.')">
     </div>
 
     <div class="banner-container">
@@ -103,11 +83,30 @@
     </div>
 
     <div class="bottom-menu">
-        <button class="menu-btn">고객센터<br>(버그신고)</button>
+        <button class="menu-btn" onclick="alert('문의: codetbase@admin.com')">고객센터</button>
         <button class="menu-btn" onclick="openModal('info-modal')">나의정보</button>
     </div>
 
-    <div class="footer">상호: 1 | 대표: 1<br>개인정보관리책임자: 1 | 호스팅제공자: 1<br>© Copyright 나인틴나인. All Rights Reserved.</div>
+    <div class="footer">상호: codetbase | 대표: 1<br>© Copyright 나인틴나인. All Rights Reserved.</div>
+</div>
+
+<div id="rank-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('rank-modal')">&times;</span>
+        <h2 style="text-align:center;">🏆 실시간 랭킹</h2>
+        <div id="rank-list">로딩 중...</div>
+    </div>
+</div>
+
+<div id="info-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('info-modal')">&times;</span>
+        <h2 style="text-align:center;">👤 내 정보</h2>
+        <p>닉네임: <b id="info-nick"></b></p>
+        <p>보유 골드: <b id="info-gold"></b></p>
+        <hr>
+        <button onclick="location.href='login.html'" style="width:100%; padding:10px; background:#e74c3c; color:white; border:none; border-radius:10px;">로그아웃</button>
+    </div>
 </div>
 
 <script>
@@ -120,13 +119,42 @@
         const { data: { session } } = await supabaseClient.auth.getSession();
         if(!session) { location.href="login.html"; return; }
         const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
-        user = p; updateHomeUI(); startBanner(); document.getElementById('main-ui').style.display = 'flex';
+        user = p;
+        if(user.is_banned) { alert("정지된 계정입니다."); location.href="login.html"; return; }
+        updateHomeUI(); startBanner(); document.getElementById('main-ui').style.display = 'flex';
     }
 
     function updateHomeUI() {
         document.getElementById('u-nick').innerText = user.nickname + "님";
         document.getElementById('u-gold').innerText = user.gold.toLocaleString() + "G";
         document.getElementById('u-avatar').src = user.avatar_url || "https://www.pngarts.com/files/10/Default-Profile-Picture-Download-PNG-Image.png";
+        document.getElementById('info-nick').innerText = user.nickname;
+        document.getElementById('info-gold').innerText = user.gold.toLocaleString() + "G";
+    }
+
+    // 랭킹 열기
+    async function openRank() {
+        openModal('rank-modal');
+        const { data } = await supabaseClient.from('profiles').select('nickname, gold').order('gold', { ascending: false }).limit(10);
+        const rList = document.getElementById('rank-list');
+        rList.innerHTML = data.map((u, i) => `<div class="rank-item"><span>${i+1}위 ${u.nickname}</span><b>${u.gold.toLocaleString()}G</b></div>`).join('');
+    }
+
+    // 출석 체크
+    async function handleDailyCheck() {
+        const lastCheck = localStorage.getItem(`daily_${user.id}`);
+        const today = new Date().toDateString();
+        if(lastCheck === today) return alert("이미 오늘 출석하셨습니다.");
+
+        const reward = parseInt(localStorage.getItem('codet_daily')) || 5000;
+        const { data, error } = await supabaseClient.rpc('increment_gold', { row_id: user.id, amount: reward });
+        
+        if(!error) {
+            user.gold += reward;
+            localStorage.setItem(`daily_${user.id}`, today);
+            alert(`${reward.toLocaleString()}G 출석 보상 완료!`);
+            updateHomeUI();
+        }
     }
 
     let bannerIdx = 0;
@@ -138,6 +166,8 @@
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
     init();
 </script>
 </body>
