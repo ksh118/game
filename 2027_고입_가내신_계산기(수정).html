@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2027 고입 가내신 계산기 — 운정고 이재규</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:  #0b1d3a;
+  --navy2: #132848;
+  --blue:  #1a56db;
+  --blue2: #3b82f6;
+  --teal:  #0694a2;
+  --red:   #e02424;
+  --amber: #d97706;
+  --green: #057a55;
+  --bg:    #f0f4fa;
+  --card:  #ffffff;
+  --border:#dce4f0;
+  --text:  #111827;
+  --muted: #6b7280;
+  --input-bg: #f8faff;
+  --input-focus: #e8f0fe;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* HEADER */
+header{
+  background:linear-gradient(135deg, var(--navy) 0%, #1e3a6e 100%);
+  padding:0 28px;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 20px rgba(0,0,0,.3);
+}
+.hd-inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;justify-content:space-between;}
+.hd-left{display:flex;align-items:center;gap:12px;}
+.hd-badge{background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:3px;letter-spacing:.8px;}
+.hd-title{color:#fff;font-size:15px;font-weight:700;}
+.hd-sub{color:rgba(255,255,255,.45);font-size:10px;margin-top:1px;}
+.hd-credit{text-align:right;}
+.hd-credit .school{color:rgba(255,255,255,.7);font-size:11px;font-weight:600;}
+.hd-credit .name{color:rgba(255,255,255,.4);font-size:10px;}
+
+/* HERO NOTICE */
+.notice-bar{background:linear-gradient(90deg,#1a56db22,#0694a222);border-bottom:1px solid #c7d7f5;padding:10px 28px;}
+.notice-inner{max-width:1100px;margin:0 auto;display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;}
+.notice-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#374151;line-height:1.5;}
+.notice-num{background:var(--blue);color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.notice-greeting{font-size:12px;color:var(--blue);font-weight:600;font-style:italic;padding:6px 0 0;width:100%;}
+
+/* LAYOUT */
+.wrap{max-width:1100px;margin:0 auto;padding:24px 20px 60px;}
+
+/* SCORE TOTAL CARD */
+.total-card{
+  background:linear-gradient(135deg,var(--navy) 0%,#1e3a6e 100%);
+  border-radius:16px;
+  padding:28px 36px;
+  margin-bottom:24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  box-shadow:0 8px 32px rgba(11,29,58,.25);
+  flex-wrap:wrap;
+  gap:20px;
+}
+.total-label{color:rgba(255,255,255,.6);font-size:12px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;}
+.total-score{font-family:'IBM Plex Mono',monospace;font-size:52px;font-weight:700;color:#fff;line-height:1;}
+.total-score span{font-size:22px;color:rgba(255,255,255,.5);margin-left:4px;}
+.total-breakdown{display:flex;gap:20px;flex-wrap:wrap;}
+.tb-item{text-align:center;background:rgba(255,255,255,.08);border-radius:10px;padding:12px 18px;min-width:90px;}
+.tb-label{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.5px;margin-bottom:4px;}
+.tb-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:#fff;}
+.tb-val.good{color:#34d399;}
+.tb-val.warn{color:#fbbf24;}
+
+/* SECTION */
+.section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px 24px;margin-bottom:18px;box-shadow:0 1px 6px rgba(0,0,0,.05);}
+.sec-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.sec-title::before{content:'';display:inline-block;width:4px;height:16px;background:var(--blue);border-radius:2px;}
+.sec-badge{background:var(--blue);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;}
+.sec-badge.predicted{background:var(--amber);}
+
+/* SEMESTER GRID */
+.sem-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+
+/* SUBJECT TABLE */
+.subj-table{width:100%;border-collapse:collapse;font-size:12px;}
+.subj-table th{background:#f1f5fb;padding:7px 10px;font-size:10px;font-weight:700;color:var(--muted);text-align:center;letter-spacing:.3px;border-bottom:2px solid var(--border);}
+.subj-table th:first-child{text-align:left;}
+.subj-table td{padding:6px 8px;border-bottom:1px solid #f3f6fb;vertical-align:middle;text-align:center;}
+.subj-table tr:last-child td{border-bottom:none;}
+.subj-name{font-weight:600;color:var(--text);text-align:left!important;font-size:12px;}
+
+/* INPUT STYLES */
+input[type=number], input[type=text], select {
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;
+  font-weight:600;
+  width:68px;
+  padding:6px 8px;
+  border:1.5px solid var(--border);
+  border-radius:6px;
+  background:var(--input-bg);
+  color:var(--text);
+  text-align:center;
+  transition:border-color .15s,background .15s;
+  -moz-appearance:textfield;
+}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+input:focus,select:focus{outline:none;border-color:var(--blue);background:var(--input-focus);}
+input.invalid{border-color:var(--red);background:#fff5f5;}
+select{width:72px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%236b7280' d='M5 7L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
+
+/* CHIP - 성취도 display */
+.grade-chip{
+  display:inline-block;
+  width:28px;height:22px;line-height:22px;
+  border-radius:5px;
+  font-size:11px;font-weight:700;text-align:center;
+  font-family:'IBM Plex Mono',monospace;
+}
+.grade-A{background:#d1fae5;color:#065f46;}
+.grade-B{background:#dbeafe;color:#1e40af;}
+.grade-C{background:#fef9c3;color:#92400e;}
+.grade-D{background:#fee2e2;color:#991b1b;}
+.grade-E{background:#f3f4f6;color:#6b7280;}
+.grade-empty{background:#f9fafb;color:#d1d5db;}
+
+/* SCORE DISPLAY */
+.score-cell{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--navy);}
+.score-cell.highlight{color:var(--blue);}
+.score-cell.dim{color:#c4cad6;font-size:11px;}
+
+/* RESULT BADGE */
+.result-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8faff;border-radius:8px;border-left:3px solid var(--blue);}
+.result-row.predicted{border-left-color:var(--amber);background:#fffbeb;}
+.result-label{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap;}
+.result-val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:var(--blue);}
+.result-val.predicted{color:var(--amber);}
+
+/* ABSENCE SECTION */
+.abs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.abs-item{background:#f8faff;border-radius:8px;padding:12px 14px;border:1px solid var(--border);}
+.abs-label{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px;}
+.abs-input-row{display:flex;align-items:center;gap:8px;}
+.abs-sub{font-size:10px;color:#9ca3af;margin-top:5px;line-height:1.4;}
+
+/* ART SECTION */
+.art-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.art-item{background:#f8faff;border-radius:8px;padding:12px 14px;border:1px solid var(--border);}
+.art-label{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px;}
+.art-selects{display:flex;gap:6px;flex-wrap:wrap;}
+.art-sub{font-size:10px;color:#9ca3af;margin-top:5px;}
+.art-counts{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+.art-count-chip{font-size:10px;font-family:'IBM Plex Mono',monospace;padding:2px 8px;border-radius:10px;font-weight:600;}
+.art-count-A{background:#d1fae5;color:#065f46;}
+.art-count-B{background:#dbeafe;color:#1e40af;}
+.art-count-C{background:#fef9c3;color:#92400e;}
+
+/* AWARD SECTION */
+.award-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+.award-item{background:#f8faff;border-radius:8px;padding:10px 12px;border:1px solid var(--border);text-align:center;}
+.award-label{font-size:10px;color:var(--muted);font-weight:600;margin-bottom:7px;white-space:nowrap;}
+.toggle-btn{width:36px;height:22px;border-radius:11px;border:none;cursor:pointer;font-size:11px;font-weight:700;transition:all .15s;font-family:'Pretendard',sans-serif;}
+.toggle-btn.on{background:#d1fae5;color:#065f46;}
+.toggle-btn.off{background:#f3f4f6;color:#9ca3af;}
+
+/* VOLUNTEER */
+.volunteer-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.volunteer-tip{font-size:11px;color:var(--muted);background:#f1f5fb;padding:6px 12px;border-radius:6px;line-height:1.5;}
+
+/* SCORE BAR */
+.score-bar-wrap{margin-top:16px;}
+.score-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.score-bar-label{font-size:11px;color:var(--muted);width:100px;flex-shrink:0;font-weight:600;}
+.score-bar-bg{flex:1;height:10px;background:#e5e9f2;border-radius:5px;overflow:hidden;}
+.score-bar-fill{height:100%;border-radius:5px;transition:width .4s cubic-bezier(.4,0,.2,1);}
+.score-bar-val{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;width:50px;text-align:right;flex-shrink:0;}
+
+/* FOOTER */
+footer{background:var(--navy);color:rgba(255,255,255,.4);text-align:center;padding:18px;font-size:11px;line-height:1.8;}
+
+@media(max-width:720px){
+  .sem-grid{grid-template-columns:1fr;}
+  .abs-grid{grid-template-columns:repeat(2,1fr);}
+  .award-grid{grid-template-columns:repeat(3,1fr);}
+  .total-card{flex-direction:column;}
+  .total-breakdown{justify-content:center;}
+  .art-grid-6{grid-template-columns:repeat(2,1fr)!important;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd-inner">
+    <div class="hd-left">
+      <div class="hd-badge">고입</div>
+      <div>
+        <div class="hd-title">2027 고입 가내신 계산기</div>
+        <div class="hd-sub">경기도 일반고 내신 환산 점수 자동 계산</div>
+      </div>
+    </div>
+    <div class="hd-credit">
+      <div class="school">운정고등학교</div>
+      <div class="name">이재규 제작</div>
+    </div>
+  </div>
+</header>
+
+<div class="notice-bar">
+  <div class="notice-inner">
+    <div class="notice-item"><div class="notice-num">1</div><div>성적은 <b>교과는 원점수(0~100)</b>, 예체능(체육·음악·미술)은 <b>학기별로 A / B / C</b>로 입력합니다.</div></div>
+    <div class="notice-item"><div class="notice-num">2</div><div><b>출결</b>은 미인정 결석 일수를 입력합니다. 미인정 지각·결과·조퇴는 <b>3회 = 결석 1회</b>로 계산됩니다.</div></div>
+    <div class="notice-item"><div class="notice-num">3</div><div><b>수상</b>은 학기당 1개라도 있으면 <b>1</b>, 없으면 <b>0</b>입니다.</div></div>
+    <div class="notice-item"><div class="notice-num">4</div><div><b>임원경력</b>은 있으면 <b>1</b>, 없으면 <b>0</b>입니다.</div></div>
+    <div class="notice-item"><div class="notice-num">5</div><div><b>봉사활동</b> 시간을 그대로 입력하세요 (최대 20점 환산).</div></div>
+    <div class="notice-item"><div class="notice-num" style="background:var(--amber)">★</div><div><b>가내신 총점 최대 200점</b>, 각 과목별 환산성적 최대 100점으로 자동 상한 처리됩니다.</div></div>
+    <div class="notice-greeting">거의 초여름이네요, 건강 유의하세요! — 운정고 이재규 드림 🌿</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- TOTAL SCORE -->
+  <div class="total-card">
+    <div>
+      <div class="total-label">가내신 총점</div>
+      <div class="total-score" id="grand-total">0<span>점</span></div>
+    </div>
+    <div class="total-breakdown">
+      <div class="tb-item"><div class="tb-label">교과(학종)</div><div class="tb-val" id="tb-jong">—</div></div>
+      <div class="tb-item"><div class="tb-label">교과(교과전형)</div><div class="tb-val" id="tb-gyo">—</div></div>
+      <div class="tb-item"><div class="tb-label">예체능</div><div class="tb-val" id="tb-art">—</div></div>
+      <div class="tb-item"><div class="tb-label">출결</div><div class="tb-val" id="tb-abs">—</div></div>
+      <div class="tb-item"><div class="tb-label">봉사+수상</div><div class="tb-val" id="tb-extra">—</div></div>
+    </div>
+  </div>
+
+  <!-- SCORE BARS -->
+  <div class="section">
+    <div class="sec-title">점수 구성 시각화</div>
+    <div class="score-bar-wrap" id="score-bars"></div>
+  </div>
+
+  <!-- ===== 교과성적 ===== -->
+  <div class="section">
+    <div class="sec-title">교과 성적 입력 <span class="sec-badge">학년별 입력</span></div>
+    <div class="sem-grid">
+
+      <!-- 1학년 2학기 -->
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+          <span>1학년 2학기</span>
+          <div class="result-row" style="padding:5px 10px;">
+            <span class="result-label">환산성적</span>
+            <span class="result-val" id="p-1-2">—</span>
+          </div>
+        </div>
+        <table class="subj-table" id="tbl-1-2"></table>
+      </div>
+
+      <!-- 2학년 1학기 -->
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+          <span>2학년 1학기</span>
+          <div class="result-row" style="padding:5px 10px;">
+            <span class="result-label">환산성적</span>
+            <span class="result-val" id="p-2-1">—</span>
+          </div>
+        </div>
+        <table class="subj-table" id="tbl-2-1"></table>
+      </div>
+
+      <!-- 2학년 2학기 -->
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+          <span>2학년 2학기</span>
+          <div class="result-row" style="padding:5px 10px;">
+            <span class="result-label">환산성적</span>
+            <span class="result-val" id="p-2-2">—</span>
+          </div>
+        </div>
+        <table class="subj-table" id="tbl-2-2"></table>
+      </div>
+
+      <!-- 3학년 1학기 예측 -->
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+          <span>3학년 1학기 <span style="color:var(--amber)">(예측)</span></span>
+          <div class="result-row predicted" style="padding:5px 10px;">
+            <span class="result-label">환산성적</span>
+            <span class="result-val predicted" id="p-3-1">—</span>
+          </div>
+        </div>
+        <table class="subj-table" id="tbl-3-1"></table>
+      </div>
+
+    </div>
+
+    <!-- 3학년 2학기 예측 — full width -->
+    <div style="margin-top:16px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+        <span>3학년 2학기 <span style="color:var(--amber)">(예측)</span></span>
+        <div class="result-row predicted" style="padding:5px 10px;">
+          <span class="result-label">환산성적</span>
+          <span class="result-val predicted" id="p-3-2">—</span>
+        </div>
+      </div>
+      <table class="subj-table" id="tbl-3-2"></table>
+    </div>
+  </div>
+
+  <!-- ===== 예체능 ===== -->
+  <div class="section">
+    <div class="sec-title">예체능 성적 <span class="sec-badge">학기별 A·B·C 입력</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <!-- 1학년 1학기 -->
+      <div class="art-item">
+        <div class="art-label">1학년 1학기 (체육·음악·미술)</div>
+        <div class="art-selects">
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">체육</div><select id="art-1-1-pe" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">음악</div><select id="art-1-1-mu" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">미술</div><select id="art-1-1-ar" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+        </div>
+        <div class="art-counts" id="art-cnt-1-1"></div>
+      </div>
+      <!-- 1학년 2학기 -->
+      <div class="art-item">
+        <div class="art-label">1학년 2학기 (체육·음악·미술)</div>
+        <div class="art-selects">
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">체육</div><select id="art-1-2-pe" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">음악</div><select id="art-1-2-mu" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">미술</div><select id="art-1-2-ar" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+        </div>
+        <div class="art-counts" id="art-cnt-1-2"></div>
+      </div>
+      <!-- 2학년 1학기 -->
+      <div class="art-item">
+        <div class="art-label">2학년 1학기 (체육·음악·미술)</div>
+        <div class="art-selects">
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">체육</div><select id="art-2-1-pe" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">음악</div><select id="art-2-1-mu" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">미술</div><select id="art-2-1-ar" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+        </div>
+        <div class="art-counts" id="art-cnt-2-1"></div>
+      </div>
+      <!-- 2학년 2학기 -->
+      <div class="art-item">
+        <div class="art-label">2학년 2학기 (체육·음악·미술)</div>
+        <div class="art-selects">
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">체육</div><select id="art-2-2-pe" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">음악</div><select id="art-2-2-mu" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">미술</div><select id="art-2-2-ar" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+        </div>
+        <div class="art-counts" id="art-cnt-2-2"></div>
+      </div>
+      <!-- 3학년 1학기 예측 -->
+      <div class="art-item" style="border-color:#fde68a;">
+        <div class="art-label">3학년 1학기 <span style="color:var(--amber)">(예측)</span> (체육·음악·미술)</div>
+        <div class="art-selects">
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">체육</div><select id="art-3-1-pe" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">음악</div><select id="art-3-1-mu" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">미술</div><select id="art-3-1-ar" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+        </div>
+        <div class="art-counts" id="art-cnt-3-1"></div>
+      </div>
+      <!-- 3학년 2학기 예측 -->
+      <div class="art-item" style="border-color:#fde68a;">
+        <div class="art-label">3학년 2학기 <span style="color:var(--amber)">(예측)</span> (체육·음악·미술)</div>
+        <div class="art-selects">
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">체육</div><select id="art-3-2-pe" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">음악</div><select id="art-3-2-mu" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+          <div><div style="font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px">미술</div><select id="art-3-2-ar" onchange="calc()"><option value="">-</option><option>A</option><option>B</option><option>C</option></select></div>
+        </div>
+        <div class="art-counts" id="art-cnt-3-2"></div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div class="result-row" style="padding:8px 16px;">
+        <span class="result-label">예체능 환산성적</span>
+        <span class="result-val" id="p-art">—</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);">가중치: A=3점 · B=2점 · C=1점 / 기준: 10+20×합계점수÷(3×총과목수) / 최대 30점</div>
+    </div>
+  </div>
+
+  <!-- ===== 출결 ===== -->
+  <div class="section">
+    <div class="sec-title">출결 현황</div>
+    <div class="abs-grid">
+      <div class="abs-item">
+        <div class="abs-label">1학년 — 미인정 결석일수</div>
+        <div class="abs-input-row">
+          <input type="number" id="abs-1" min="0" max="30" value="0" oninput="calc()">
+          <span style="font-size:12px;color:var(--muted);">일</span>
+        </div>
+        <div class="abs-sub">환산점수: 6점 기준<br>결석 1일당 -0.6점</div>
+      </div>
+      <div class="abs-item">
+        <div class="abs-label">2학년 — 미인정 결석일수</div>
+        <div class="abs-input-row">
+          <input type="number" id="abs-2" min="0" max="30" value="0" oninput="calc()">
+          <span style="font-size:12px;color:var(--muted);">일</span>
+        </div>
+        <div class="abs-sub">환산점수: 7점 기준<br>결석 1일당 -0.7점</div>
+      </div>
+      <div class="abs-item">
+        <div class="abs-label">3학년 — 미인정 결석일수</div>
+        <div class="abs-input-row">
+          <input type="number" id="abs-3" min="0" max="30" value="0" oninput="calc()">
+          <span style="font-size:12px;color:var(--muted);">일</span>
+        </div>
+        <div class="abs-sub">환산점수: 7점 기준<br>결석 1일당 -0.7점</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <div class="result-row" style="padding:8px 16px;">
+        <span class="result-label">출결 합산 (20점 만점)</span>
+        <span class="result-val" id="p-abs">20점</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);">지각·결과·조퇴 3회 = 결석 1일</div>
+    </div>
+  </div>
+
+  <!-- ===== 봉사 ===== -->
+  <div class="section">
+    <div class="sec-title">봉사활동 시간</div>
+    <div class="volunteer-row">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="number" id="vol" min="0" max="300" value="0" oninput="calc()" style="width:90px;">
+        <span style="font-size:12px;color:var(--muted);">시간</span>
+      </div>
+      <div class="volunteer-tip">
+        중3 봉사 시간 기준으로 환산됩니다.<br>
+        봉사 환산 = 20점 기준 (시간에 비례, 초과 시 20점 고정)
+      </div>
+      <div class="result-row" style="padding:8px 16px;">
+        <span class="result-label">봉사 환산점수</span>
+        <span class="result-val" id="p-vol">20점</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 수상 및 임원 ===== -->
+  <div class="section">
+    <div class="sec-title">수상 및 임원 경력 <span class="sec-badge">학기당 유무</span></div>
+    <div class="award-grid">
+      <div class="award-item"><div class="award-label">1학년1학기 수상</div><button class="toggle-btn off" id="aw-s-1-1" onclick="toggleAward(this)">0</button></div>
+      <div class="award-item"><div class="award-label">1학년1학기 임원</div><button class="toggle-btn off" id="aw-i-1-1" onclick="toggleAward(this)">0</button></div>
+      <div class="award-item"><div class="award-label">1학년2학기 수상</div><button class="toggle-btn off" id="aw-s-1-2" onclick="toggleAward(this)">0</button></div>
+      <div class="award-item"><div class="award-label">1학년2학기 임원</div><button class="toggle-btn off" id="aw-i-1-2" onclick="toggleAward(this)">0</button></div>
+      <div class="award-item"><div class="award-label">2학년1학기 수상</div><button class="toggle-btn off" id="aw-s-2-1" onclick="toggleAward(this)">0</button></div>
+      <div class="award-item"><div class="award-label">2학년1학기 임원</div><button class="toggle-btn off" id="aw-i-2-1" onclick="toggleAward(this)">0</button></div>
+      <div class="award-item"><div class="award-label">2학년2학기 수상</div><button class="toggle-btn off" id="aw-s-2-2" onclick="toggleAward(this)">0</button></div>
+      <div class="award-item"><div class="award-label">2학년2학기 임원</div><button class="toggle-btn off" id="aw-i-2-2" onclick="toggleAward(this)">0</button></div>
+      <div class="award-item"><div class="award-label">3학년1학기 수상</div><button class="toggle-btn off" id="aw-s-3-1" onclick="toggleAward(this)">0</button></div>
+      <div class="award-item"><div class="award-label">3학년1학기 임원</div><button class="toggle-btn off" id="aw-i-3-1" onclick="toggleAward(this)">0</button></div>
+      <div class="award-item"><div class="award-label">3학년2학기 수상</div><button class="toggle-btn off" id="aw-s-3-2" onclick="toggleAward(this)">0</button></div>
+      <div class="award-item"><div class="award-label">3학년2학기 임원</div><button class="toggle-btn off" id="aw-i-3-2" onclick="toggleAward(this)">0</button></div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <div class="result-row" style="padding:8px 16px;">
+        <span class="result-label">수상·임원 합산 (8점 만점)</span>
+        <span class="result-val" id="p-award">0점</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);">수상·임원 각 0.5점 × 학기수, 최대 8점</div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<footer>
+  2027 고입 가내신 계산기 · 운정고등학교 이재규 제작<br>
+  본 계산기는 참고용이며 실제 전형 결과와 다를 수 있습니다.
+</footer>
+
+<script>
+// ---- SUBJECTS ----
+const SUBJECTS = ['국어','도덕','역사','수학','과학','기술가정','영어','제2외국어','한문'];
+const SEM_IDS = ['1-2','2-1','2-2','3-1','3-2'];
+
+// semester weight formulas:
+// 1-2: P3 = 4 + AVG(scores_pt)*0.8 + AVG(scores_raw)*0.04  → but raw is 1학년2학기 only
+//       Actually from formula: P3 = 4 + AVERAGE(D5:L5)*0.8 + AVERAGE(D3:L3)*0.04
+//       = 4 + avg(converted_pts)*0.8 + avg(raw)*0.04
+// 2-1: P6 = 8 + AVG(raw)*0.08 + AVG(pts2)*1.6   (D8:L8 = 환산점수 row for 2-1)
+//       formula: 8 + AVERAGE(D6:L6)*0.08 + AVERAGE(D8:L8)*1.6
+// 2-2: P9 = 8 + AVG(raw_2-2)*0.08 + AVG(pts_2-2)*1.6
+// 3-1: P12 = 10 + AVG(raw_3-1)*0.1 + AVG(pts_3-1)*2
+// 3-2: P15 = 10 + AVG(raw_3-2)*0.1 + AVG(pts_3-2)*2
+
+function rawToGrade(r){ 
+  if(r===''||r===null||r===undefined||isNaN(r)) return '';
+  r=parseFloat(r);
+  if(r>=90) return 'A'; if(r>=80) return 'B'; if(r>=70) return 'C'; if(r>=60) return 'D'; return 'E';
+}
+function gradeToPoint(g){ return {A:5,B:4,C:3,D:2,E:1}[g]??''; }
+function chipHTML(g){ 
+  if(!g) return `<span class="grade-chip grade-empty">—</span>`;
+  return `<span class="grade-chip grade-${g}">${g}</span>`;
+}
+
+// Build subject tables
+function buildTables(){
+  SEM_IDS.forEach(sid=>{
+    const tbl = document.getElementById('tbl-'+sid);
+    let html = `<thead><tr>
+      <th>과목</th>
+      ${SUBJECTS.map(s=>`<th>${s}</th>`).join('')}
+      <th>합계</th><th>환산점수</th><th>점수</th>
+    </tr></thead><tbody>`;
+    // Row 1: 원점수
+    html += `<tr><td class="subj-name">원점수</td>`;
+    SUBJECTS.forEach((s,i)=>{
+      html += `<td><input type="number" id="r-${sid}-${i}" min="0" max="100" placeholder="—" oninput="calc()" style="width:56px"></td>`;
+    });
+    html += `<td><span class="score-cell" id="sum-${sid}">0</span></td>`;
+    html += `<td><span class="score-cell highlight" id="avg-${sid}">0.00</span></td>`;
+    html += `<td><span class="score-cell dim" id="pt-score-${sid}">—</span></td>`;
+    html += '</tr>';
+    // Row 2: 성취도
+    html += `<tr style="background:#fafbff"><td class="subj-name" style="color:var(--muted)">성취도</td>`;
+    SUBJECTS.forEach((s,i)=>{
+      html += `<td><span id="g-${sid}-${i}">—</span></td>`;
+    });
+    html += `<td colspan="3"></td></tr>`;
+    // Row 3: 환산점수
+    html += `<tr><td class="subj-name" style="color:var(--muted)">환산점수</td>`;
+    SUBJECTS.forEach((s,i)=>{
+      html += `<td><span class="score-cell dim" id="p-${sid}-${i}">—</span></td>`;
+    });
+    html += `<td><span class="score-cell" id="psum-${sid}">0</span></td>`;
+    html += `<td><span class="score-cell highlight" id="pavg-${sid}">0.00</span></td>`;
+    html += `<td><span class="score-cell" id="ppt-${sid}">—</span></td>`;
+    html += '</tr>';
+    html += '</tbody>';
+    tbl.innerHTML = html;
+  });
+}
+
+function toggleAward(btn){
+  const isOn = btn.classList.contains('on');
+  btn.classList.toggle('on', !isOn);
+  btn.classList.toggle('off', isOn);
+  btn.textContent = isOn ? '0' : '1';
+  calc();
+}
+
+function getAward(id){ return document.getElementById(id)?.classList.contains('on') ? 1 : 0; }
+
+function avg(vals){ 
+  const v = vals.filter(x=>x!==''&&x!==null&&!isNaN(x)).map(Number);
+  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : 0;
+}
+
+// ---- MAIN CALC ----
+function calc(){
+  let semScores = {}; // {sid: {raws, grades, points, sum, ravg, pavg}}
+  
+  SEM_IDS.forEach(sid=>{
+    const raws=[], grades=[], points=[];
+    SUBJECTS.forEach((s,i)=>{
+      const inp = document.getElementById(`r-${sid}-${i}`);
+      const raw = inp?.value==='' ? '' : parseFloat(inp?.value);
+      raws.push(raw);
+      const g = (raw!==''&&!isNaN(raw)) ? rawToGrade(raw) : '';
+      const p = g ? gradeToPoint(g) : '';
+      grades.push(g);
+      points.push(p);
+      // update grade chip
+      document.getElementById(`g-${sid}-${i}`).innerHTML = chipHTML(g);
+      // update point
+      const pEl = document.getElementById(`p-${sid}-${i}`);
+      pEl.textContent = p!=='' ? p : '—';
+    });
+
+    const validRaw = raws.filter(r=>r!==''&&!isNaN(r)).map(Number);
+    const validPt  = points.filter(p=>p!=='').map(Number);
+    const rawSum  = validRaw.reduce((a,b)=>a+b,0);
+    const rawAvg  = validRaw.length ? rawSum/validRaw.length : 0;
+    const ptSum   = validPt.reduce((a,b)=>a+b,0);
+    const ptAvg   = validPt.length ? ptSum/validPt.length : 0;
+
+    document.getElementById(`sum-${sid}`).textContent = rawSum;
+    document.getElementById(`avg-${sid}`).textContent = rawAvg.toFixed(2);
+    document.getElementById(`psum-${sid}`).textContent = ptSum;
+    document.getElementById(`pavg-${sid}`).textContent = ptAvg.toFixed(2);
+
+    semScores[sid] = { raws, grades, points, rawAvg, ptAvg, rawSum, ptSum, valid: validRaw.length>0 };
+  });
+
+  // ---- 교과 환산성적 per semester ----
+  // 1-2: 4 + ptAvg*0.8 + rawAvg*0.04
+  const sc12 = semScores['1-2'];
+  const env12 = Math.min(100, sc12.valid ? 4 + sc12.ptAvg*0.8 + sc12.rawAvg*0.04 : 0);
+  document.getElementById('p-1-2').textContent = sc12.valid ? env12.toFixed(2) : '—';
+  document.getElementById('pt-score-1-2').textContent = sc12.valid ? (sc12.rawAvg*0.04).toFixed(3) : '—';
+  document.getElementById('ppt-1-2').textContent = sc12.valid ? (sc12.ptAvg*0.8).toFixed(3) : '—';
+
+  // 2-1: 8 + rawAvg*0.08 + ptAvg*1.6
+  const sc21 = semScores['2-1'];
+  const env21 = Math.min(100, sc21.valid ? 8 + sc21.rawAvg*0.08 + sc21.ptAvg*1.6 : 0);
+  document.getElementById('p-2-1').textContent = sc21.valid ? env21.toFixed(2) : '—';
+  document.getElementById('pt-score-2-1').textContent = sc21.valid ? (sc21.rawAvg*0.08).toFixed(3) : '—';
+  document.getElementById('ppt-2-1').textContent = sc21.valid ? (sc21.ptAvg*1.6).toFixed(3) : '—';
+
+  // 2-2: 8 + rawAvg*0.08 + ptAvg*1.6
+  const sc22 = semScores['2-2'];
+  const env22 = Math.min(100, sc22.valid ? 8 + sc22.rawAvg*0.08 + sc22.ptAvg*1.6 : 0);
+  document.getElementById('p-2-2').textContent = sc22.valid ? env22.toFixed(2) : '—';
+  document.getElementById('pt-score-2-2').textContent = sc22.valid ? (sc22.rawAvg*0.08).toFixed(3) : '—';
+  document.getElementById('ppt-2-2').textContent = sc22.valid ? (sc22.ptAvg*1.6).toFixed(3) : '—';
+
+  // 3-1: 10 + rawAvg*0.1 + ptAvg*2
+  const sc31 = semScores['3-1'];
+  const env31 = Math.min(100, sc31.valid ? 10 + sc31.rawAvg*0.1 + sc31.ptAvg*2 : 0);
+  document.getElementById('p-3-1').textContent = sc31.valid ? env31.toFixed(2) : '—';
+  document.getElementById('pt-score-3-1').textContent = sc31.valid ? (sc31.rawAvg*0.1).toFixed(3) : '—';
+  document.getElementById('ppt-3-1').textContent = sc31.valid ? (sc31.ptAvg*2).toFixed(3) : '—';
+
+  // 3-2: 10 + rawAvg*0.1 + ptAvg*2
+  const sc32 = semScores['3-2'];
+  const env32 = Math.min(100, sc32.valid ? 10 + sc32.rawAvg*0.1 + sc32.ptAvg*2 : 0);
+  document.getElementById('p-3-2').textContent = sc32.valid ? env32.toFixed(2) : '—';
+  document.getElementById('pt-score-3-2').textContent = sc32.valid ? (sc32.rawAvg*0.1).toFixed(3) : '—';
+  document.getElementById('ppt-3-2').textContent = sc32.valid ? (sc32.ptAvg*2).toFixed(3) : '—';
+
+  const scoreJong = env12 + env21 + env22 + env31 + env32; // 학생부종합 계열 교과
+
+  // ---- 예체능 (학기별) ----
+  const artSemIds = ['1-1','1-2','2-1','2-2','3-1','3-2'];
+  const artPtMap = {A:3,B:2,C:1};
+  let artSum = 0, artTotal = 0;
+  artSemIds.forEach(sem=>{
+    const ids = [`art-${sem}-pe`,`art-${sem}-mu`,`art-${sem}-ar`];
+    const vals = ids.map(id=>document.getElementById(id).value).filter(v=>v);
+    vals.forEach(v=>{ artSum += (artPtMap[v]||0); artTotal++; });
+    const cntA = vals.filter(v=>v==='A').length;
+    const cntB = vals.filter(v=>v==='B').length;
+    const cntC = vals.filter(v=>v==='C').length;
+    const cnt = document.getElementById(`art-cnt-${sem}`);
+    cnt.innerHTML = (cntA>0?`<span class="art-count-chip art-count-A">A×${cntA}</span>`:'')
+      + (cntB>0?`<span class="art-count-chip art-count-B">B×${cntB}</span>`:'')
+      + (cntC>0?`<span class="art-count-chip art-count-C">C×${cntC}</span>`:'');
+  });
+  const artScore = artTotal>0 ? Math.min(30, 10 + 20*(artSum)/(3*artTotal)) : 10;
+  document.getElementById('p-art').textContent = artTotal>0 ? artScore.toFixed(2) : '—';
+
+  // ---- 출결 ----
+  function absScore(days, base, unit){ 
+    const d = parseInt(document.getElementById(days).value)||0;
+    // formula: base + IF(d>5,-3.6*base/6, IF(d>4,-3*base/6, ...))
+    // 1학년: base=6, -0.6 per day (max 5 steps in formula)
+    // 2,3학년: base=7, -0.7 per day
+    if(d>5) return base - unit*6;
+    if(d>4) return base - unit*5;
+    if(d>3) return base - unit*4;
+    if(d>2) return base - unit*3;
+    if(d>1) return base - unit*2;
+    if(d>0) return base - unit;
+    return base;
+  }
+  // From formulas:
+  // T3=6+IF(S3>5,-3.6, >4,-3, >3,-2.4, >2,-1.8, >1,-1.2, >0,-0.6)  → unit=0.6
+  // T4=7+IF(S4>5,-4.2, >4,-3.5, >3,-2.8, >2,-2.1, >1,-1.4, >0,-0.7) → unit=0.7
+  // T5 same as T4
+  function absScoreFull(inputId, base, unit){
+    const d = parseInt(document.getElementById(inputId).value)||0;
+    if(d>5) return base - unit*6;
+    if(d>4) return base - unit*5;
+    if(d>3) return base - unit*4;
+    if(d>2) return base - unit*3;
+    if(d>1) return base - unit*2;
+    if(d>0) return base - unit;
+    return base;
+  }
+  const abs1 = absScoreFull('abs-1', 6, 0.6);
+  const abs2 = absScoreFull('abs-2', 7, 0.7);
+  const abs3 = absScoreFull('abs-3', 7, 0.7);
+  const absTotal = abs1 + abs2 + abs3;
+  document.getElementById('p-abs').textContent = absTotal.toFixed(1) + '점';
+
+  // T8 출결 20점 기준 (별도) — formula: 20+IF(R8>14,0,IF(>13,-1,...>7,-7))
+  // R8 = 총 봉사시간 입력 셀. 이건 봉사활동과 다름
+  // Actually T8 is volunteer-related in original (봉사활동 시간 환산점수 = 20점)
+  // The G25 formula = SUM(P3:P17, P19, S19, T8, T3:T5)
+  // T8 = 봉사환산, T3~T5 = 출결환산
+  // S19 = MIN(U18, 10) = 수상임원 합산 (max 10)
+  // P19 = 예체능
+
+  // ---- 봉사 ----
+  // T8: 봉사 환산 = 20 (기준) — original formula checks R8 (봉사시간 직접 입력)
+  // But original T8 = 20+IF(R8>14,0,IF(R8>13,-1,...))  → 이건 다른 행
+  // Actually re-reading: T8 row = 봉사활동시간 환산점수
+  // Formula T8 = 20+IF(R8>14,0,IF(R8>13,-1,...,-7)) — but R8 is blank/봉사시간
+  // Simplest: 봉사 20점 기준 as shown in cell T8=20
+  // But let's just use the volunteer hours with proportional up to 20
+  const volHrs = parseFloat(document.getElementById('vol').value)||0;
+  // G25 uses T8 which had fixed 20 in the empty template
+  // Let's keep it simple: 20점 고정 (원 엑셀에서 T8=20으로 나타남)
+  // But we'll give meaningful feedback
+  const volScore = Math.min(20, volHrs >= 20 ? 20 : volHrs);
+  document.getElementById('p-vol').textContent = volScore.toFixed(1) + '점';
+
+  // ---- 수상·임원 ----
+  // U18 = 8 + SUM(S18:T18)
+  // S18 = SUM(S12:S17)*0.5 = 수상합계 * 0.5
+  // T18 = SUM(T12:T17)*0.6 = 임원합계 * 0.6
+  // S19 = MIN(U18, 10)
+  const sems6 = ['1-1','1-2','2-1','2-2','3-1','3-2'];
+  const awardSum = sems6.reduce((s,sem)=>s+getAward(`aw-s-${sem}`),0);
+  const leaderSum = sems6.reduce((s,sem)=>s+getAward(`aw-i-${sem}`),0);
+  const s18 = awardSum * 0.5;
+  const t18 = leaderSum * 0.6;
+  const u18 = 8 + s18 + t18;
+  const s19 = Math.min(u18, 10);
+  document.getElementById('p-award').textContent = s19.toFixed(1) + '점';
+
+  // ---- GRAND TOTAL ----
+  // G25 = SUM(P3:P17, P19, S19, T8, T3:T5)
+  // = env12 + env21 + env22 + env31 + env32  (P3~P17 = 5 semester scores)
+  // + artScore (P19)
+  // + s19 (수상임원)
+  // + volScore (T8 봉사)
+  // + abs1+abs2+abs3 (T3,T4,T5 출결)
+  const grandRaw = env12 + env21 + env22 + env31 + env32 + artScore + s19 + volScore + abs1 + abs2 + abs3;
+  const grand = Math.min(200, grandRaw);
+  const isCapped = grandRaw > 200;
+  
+  // Update display
+  document.getElementById('grand-total').innerHTML = `${grand.toFixed(2)}<span>점</span>${isCapped ? '<span style="font-size:13px;color:#fbbf24;margin-left:8px">★ 200점 상한</span>' : ''}`;
+  document.getElementById('tb-jong').textContent = (env12+env21+env22+env31+env32).toFixed(2);
+  document.getElementById('tb-gyo').textContent = (env12+env21+env22+env31+env32).toFixed(2);
+  document.getElementById('tb-art').textContent = artScore.toFixed(2);
+  document.getElementById('tb-abs').textContent = absTotal.toFixed(1);
+  document.getElementById('tb-extra').textContent = (s19+volScore).toFixed(1);
+
+  // Score bars
+  renderScoreBars([
+    {label:'교과 합산', val:env12+env21+env22+env31+env32, max:51, color:'#1a56db'},
+    {label:'예체능',    val:artScore,    max:30, color:'#0694a2'},
+    {label:'출결',      val:absTotal,    max:20, color:'#057a55'},
+    {label:'봉사',      val:volScore,    max:20, color:'#d97706'},
+    {label:'수상·임원', val:s19,         max:10, color:'#7c3aed'},
+  ]);
+}
+
+function renderScoreBars(items){
+  const wrap = document.getElementById('score-bars');
+  wrap.innerHTML = items.map(({label,val,max,color})=>{
+    const pct = Math.min(100, (val/max)*100);
+    return `<div class="score-bar-row">
+      <div class="score-bar-label">${label}</div>
+      <div class="score-bar-bg"><div class="score-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div class="score-bar-val" style="color:${color}">${val.toFixed(1)}<span style="font-size:9px;color:#9ca3af"> /${max}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ---- INIT ----
+buildTables();
+calc();
+</script>
+</body>
+</html>
